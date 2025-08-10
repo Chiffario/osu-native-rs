@@ -1,0 +1,3 @@
+[workspace]
+members = ["libosu-native-sys","osu-native", "osu-native-test"]
+resolver = "3"
