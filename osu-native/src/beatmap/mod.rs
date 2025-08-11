@@ -12,7 +12,10 @@ use libosu_native_sys::{
     Beatmap_GetVersion, ErrorCode, NativeBeatmap, NativeBeatmapHandle,
 };
 
-use crate::error::{self, NativeError, error_code_to_native};
+use crate::{
+    error::{self, NativeError, OsuError, error_code_to_native},
+    utils::read_native_string,
+};
 struct Beatmap {
     handle: NativeBeatmapHandle,
     pub approach_rate: f32,
@@ -46,22 +49,27 @@ impl From<NativeBeatmap> for Beatmap {
 #[derive(Debug)]
 pub enum BeatmapError {
     PathError,
-    NativeError(NativeError),
+    GenericError(OsuError),
     UnknownError,
 }
 impl Display for BeatmapError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BeatmapError::PathError => writeln!(f, "Specified path is invalid"),
-            BeatmapError::NativeError(native_error) => writeln!(f, "Native error: {native_error}"),
+            BeatmapError::GenericError(native_error) => writeln!(f, "Native error: {native_error}"),
             BeatmapError::UnknownError => writeln!(f, "Unknown error"),
         }
     }
 }
 impl Error for BeatmapError {}
+impl From<OsuError> for BeatmapError {
+    fn from(value: OsuError) -> Self {
+        Self::GenericError(value)
+    }
+}
 impl From<NativeError> for BeatmapError {
     fn from(value: NativeError) -> Self {
-        Self::NativeError(value)
+        Self::GenericError(OsuError::NativeError(value))
     }
 }
 impl Beatmap {
@@ -72,51 +80,20 @@ impl Beatmap {
         let beatmap: Result<Beatmap, NativeError> = unsafe {
             match Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) {
                 ErrorCode::Success => Ok(beatmap.assume_init().into()),
-                ErrorCode::ObjectNotFound => Err(NativeError::ObjectNotFound),
-                ErrorCode::RulesetUnavailable => Err(NativeError::RulesetUnavailable),
-                ErrorCode::BeatmapFileNotFound => {
-                    Err(NativeError::BeatmapFileNotFound(path_str.to_owned()))
-                }
-                _ => Err(NativeError::UnknownError),
+                e => Err(e.into()),
             }
         };
         beatmap.map_err(Into::into)
     }
 
     pub fn get_title(&self) -> Result<String, BeatmapError> {
-        self.get_native_string(Beatmap_GetTitle)
+        read_native_string(self.handle, Beatmap_GetTitle).map_err(Into::into)
     }
     pub fn get_artist(&self) -> Result<String, BeatmapError> {
-        self.get_native_string(Beatmap_GetArtist)
+        read_native_string(self.handle, Beatmap_GetArtist).map_err(Into::into)
     }
     pub fn get_version(&self) -> Result<String, BeatmapError> {
-        self.get_native_string(Beatmap_GetVersion)
-    }
-    fn get_native_string(
-        &self,
-        func: unsafe extern "C" fn(NativeBeatmapHandle, *mut u8, *mut i32) -> ErrorCode,
-    ) -> Result<String, BeatmapError> {
-        let mut size = 0i32;
-
-        unsafe {
-            match func(self.handle, null_mut(), &raw mut size) {
-                ErrorCode::BufferSizeQuery => {}
-                e => return Err(error_code_to_native(e).into()),
-            }
-        }
-
-        let mut buffer = Vec::with_capacity(size.try_into().unwrap());
-        unsafe {
-            match func(self.handle, buffer.as_mut_ptr(), &raw mut size) {
-                ErrorCode::Success => {
-                    buffer.set_len(size as usize);
-                    CString::from_vec_with_nul(buffer)
-                        .map(|s| s.into_string().unwrap())
-                        .map_err(|_| BeatmapError::UnknownError)
-                }
-                e => Err(error_code_to_native(e).into()),
-            }
-        }
+        read_native_string(self.handle, Beatmap_GetVersion).map_err(Into::into)
     }
 }
 

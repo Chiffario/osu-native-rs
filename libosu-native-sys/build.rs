@@ -1,4 +1,4 @@
-use std::{env, error::Error, process::Command};
+use std::{env, error::Error};
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     let outdir = env::var("CARGO_MANIFEST_DIR").or(Err("No output directory"))?;

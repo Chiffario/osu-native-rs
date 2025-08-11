@@ -21,11 +21,40 @@ impl Display for NativeError {
     }
 }
 impl std::error::Error for NativeError {}
-pub fn error_code_to_native(error_code: ErrorCode) -> NativeError {
-    match error_code {
-        ErrorCode::ObjectNotFound => NativeError::ObjectNotFound,
-        ErrorCode::RulesetUnavailable => NativeError::RulesetUnavailable,
-        ErrorCode::BeatmapFileNotFound => NativeError::BeatmapFileNotFound(String::new()),
-        _ => NativeError::UnknownError,
+impl From<ErrorCode> for NativeError {
+    fn from(value: ErrorCode) -> Self {
+        match value {
+            ErrorCode::ObjectNotFound => Self::ObjectNotFound,
+            ErrorCode::RulesetUnavailable => Self::RulesetUnavailable,
+            ErrorCode::BeatmapFileNotFound => Self::BeatmapFileNotFound(String::new()),
+            _ => Self::UnknownError,
+        }
     }
 }
+pub fn error_code_to_native(error_code: ErrorCode) -> OsuError {
+    match error_code {
+        ErrorCode::ObjectNotFound => OsuError::NativeError(NativeError::ObjectNotFound),
+        ErrorCode::RulesetUnavailable => OsuError::NativeError(NativeError::RulesetUnavailable),
+        ErrorCode::BeatmapFileNotFound => {
+            OsuError::NativeError(NativeError::BeatmapFileNotFound(String::new()))
+        }
+        _ => OsuError::NativeError(NativeError::UnknownError),
+    }
+}
+
+#[derive(Debug)]
+pub enum OsuError {
+    LogicError,
+    NativeError(NativeError),
+    UnknownError,
+}
+impl Display for OsuError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OsuError::LogicError => writeln!(f, "Library error, contact the developer"),
+            OsuError::NativeError(e) => writeln!(f, "Native error: {e}"),
+            OsuError::UnknownError => writeln!(f, "Unknown error"),
+        }
+    }
+}
+impl std::error::Error for OsuError {}

@@ -2,7 +2,10 @@ use std::{error::Error, ffi::CString, fmt::Display, mem::MaybeUninit, ptr::null_
 
 use libosu_native_sys::{ErrorCode, NativeRuleset, Ruleset_CreateFromId, Ruleset_GetShortName};
 
-use crate::error::{NativeError, error_code_to_native};
+use crate::{
+    error::{NativeError, OsuError, error_code_to_native},
+    utils::read_native_string,
+};
 
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
@@ -41,13 +44,13 @@ impl TryFrom<i32> for Rulesets {
 #[derive(Debug)]
 pub enum RulesetError {
     InvalidRuleset,
-    NativeError(NativeError),
+    GenericError(OsuError),
 }
 impl Display for RulesetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RulesetError::InvalidRuleset => writeln!(f, "Invalid ruleset ID"),
-            RulesetError::NativeError(native_error) => writeln!(f, "Native error: {native_error}"),
+            RulesetError::GenericError(native_error) => writeln!(f, "Native error: {native_error}"),
         }
     }
 }
@@ -56,7 +59,18 @@ impl Error for RulesetError {}
 
 impl From<NativeError> for RulesetError {
     fn from(value: NativeError) -> Self {
+        Self::GenericError(value.into())
+    }
+}
+
+impl From<NativeError> for OsuError {
+    fn from(value: NativeError) -> Self {
         Self::NativeError(value)
+    }
+}
+impl From<OsuError> for RulesetError {
+    fn from(value: OsuError) -> Self {
+        Self::GenericError(value)
     }
 }
 struct Ruleset {
@@ -70,7 +84,7 @@ impl Ruleset {
         let ruleset = unsafe {
             match Ruleset_CreateFromId(variant.into(), ruleset.as_mut_ptr()) {
                 ErrorCode::Success => Ok(ruleset.assume_init()),
-                e => Err(error_code_to_native(e).into()),
+                e => Err(RulesetError::GenericError(error_code_to_native(e))),
             }
         };
         ruleset.map(|r| Ruleset {
@@ -79,29 +93,7 @@ impl Ruleset {
         })
     }
     pub fn get_short_name(&self) -> Result<String, RulesetError> {
-        let mut size = 0i32;
-
-        unsafe {
-            match Ruleset_GetShortName(self.handle, null_mut(), &raw mut size) {
-                ErrorCode::BufferSizeQuery => {}
-                e => return Err(error_code_to_native(e).into()),
-            }
-        }
-        println!("{size}");
-
-        let mut buffer = Vec::with_capacity(size.try_into().unwrap());
-        unsafe {
-            match Ruleset_GetShortName(self.handle, buffer.as_mut_ptr(), &raw mut size) {
-                ErrorCode::Success => {
-                    buffer.set_len(size as usize);
-                    println!("{buffer:?}");
-                    let string = CString::from_vec_with_nul(buffer).unwrap();
-                    let string = string.into_string().unwrap();
-                    return Ok(string);
-                }
-                e => return Err(error_code_to_native(e).into()),
-            }
-        }
+        read_native_string(self.handle, Ruleset_GetShortName).map_err(Into::into)
     }
 }
 
