@@ -1,25 +1,32 @@
 use std::mem::MaybeUninit;
 
 use libosu_native_sys::{
-    NativeOsuDifficultyAttributes, OsuDifficultyCalculator_Calculate,
-    OsuDifficultyCalculator_Create,
+    ErrorCode, NativeOsuDifficultyAttributes, OsuDifficultyCalculator_Calculate,
+    OsuDifficultyCalculator_Create, OsuDifficultyCalculator_Destroy,
 };
 
-use crate::error::{NativeError, OsuError, error_code_to_osu};
+use crate::{
+    beatmap,
+    error::{NativeError, OsuError, error_code_to_osu},
+    ruleset,
+};
 
 use super::DifficultyCalculator;
 
 struct OsuDifficultyCalculator {
     handle: i32,
 }
+impl Drop for OsuDifficultyCalculator {
+    fn drop(&mut self) {
+        unsafe { OsuDifficultyCalculator_Destroy(self.handle) };
+    }
+}
 
 impl DifficultyCalculator for OsuDifficultyCalculator {
     type Attributes = OsuDifficultyAttributes;
+    type NativeAttributes = NativeOsuDifficultyAttributes;
 
-    fn new(
-        ruleset: crate::ruleset::Ruleset,
-        beatmap: crate::beatmap::Beatmap,
-    ) -> Result<Self, OsuError> {
+    fn new(ruleset: ruleset::Ruleset, beatmap: beatmap::Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
         unsafe {
             match OsuDifficultyCalculator_Create(
@@ -27,17 +34,17 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
                 beatmap.get_handle(),
                 &raw mut handle,
             ) {
-                libosu_native_sys::ErrorCode::Success => Ok(Self { handle }),
+                ErrorCode::Success => Ok(Self { handle }),
                 e => Err(error_code_to_osu(e)),
             }
         }
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mut attributes: MaybeUninit<NativeOsuDifficultyAttributes> = MaybeUninit::uninit();
+        let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
         let attributes = unsafe {
             match OsuDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
-                libosu_native_sys::ErrorCode::Success => Ok(attributes.assume_init().into()),
+                ErrorCode::Success => Ok(attributes.assume_init().into()),
                 e => Err(error_code_to_osu(e)),
             }
         };
@@ -47,7 +54,7 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
 
 pub struct OsuDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: f64,
+    pub max_combo: usize,
     pub aim_difficulty: f64,
     pub aim_difficulty_slider_count: f64,
     pub speed_difficulty: f64,
@@ -66,7 +73,7 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
     fn from(value: NativeOsuDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo,
+            max_combo: value.max_combo as usize,
             aim_difficulty: value.aim_difficulty,
             aim_difficulty_slider_count: value.aim_difficulty_slider_count,
             speed_difficulty: value.speed_difficulty,
@@ -100,7 +107,7 @@ mod tests {
         let calculator = OsuDifficultyCalculator::new(ruleset, beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_eq!(attributes.star_rating, 5.249653517949988);
-        assert_eq!(attributes.max_combo, 719.00);
+        assert_eq!(attributes.max_combo, 719);
         assert_eq!(attributes.aim_difficulty, 2.5911260941792102);
         assert_eq!(attributes.aim_difficulty_slider_count, 98.87994344139403);
         assert_eq!(attributes.speed_difficulty, 2.4120488152035953);
