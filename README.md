@@ -14,6 +14,10 @@ println!("{title}");
 let ruleset = Ruleset::new_from_variant(Rulesets::Standard)?;
 let short_name = ruleset.get_short_name()?;
 println!("{short_name}")
+
+let calculator = OsuDifficultyCalculator::new(ruleset, beatmap)?;
+let attributes = calculator.calculate()?;
+println!("{}", attributes.star_rating);
 ```
 
 # Testing
