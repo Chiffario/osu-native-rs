@@ -31,7 +31,7 @@ impl From<ErrorCode> for NativeError {
         }
     }
 }
-pub fn error_code_to_native(error_code: ErrorCode) -> OsuError {
+pub fn error_code_to_osu(error_code: ErrorCode) -> OsuError {
     match error_code {
         ErrorCode::ObjectNotFound => OsuError::NativeError(NativeError::ObjectNotFound),
         ErrorCode::RulesetUnavailable => OsuError::NativeError(NativeError::RulesetUnavailable),

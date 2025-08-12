@@ -13,17 +13,22 @@ use libosu_native_sys::{
 };
 
 use crate::{
-    error::{self, NativeError, OsuError, error_code_to_native},
+    error::{self, NativeError, OsuError, error_code_to_osu},
     utils::read_native_string,
 };
-struct Beatmap {
-    handle: NativeBeatmapHandle,
+pub struct Beatmap {
+    handle: i32,
     pub approach_rate: f32,
     pub drain_rate: f32,
     pub overall_difficulty: f32,
     pub circle_size: f32,
     pub slider_multiplier: f64,
     pub slider_tick_rate: f64,
+}
+impl Beatmap {
+    pub fn get_handle(&self) -> i32 {
+        self.handle
+    }
 }
 
 impl Drop for Beatmap {
@@ -99,15 +104,9 @@ impl Beatmap {
 
 #[cfg(test)]
 mod tests {
-    use super::Beatmap;
-    use std::path::PathBuf;
+    use crate::utils::initialize_path;
 
-    fn initialize_path() -> PathBuf {
-        let manifest_path = std::env!("CARGO_MANIFEST_DIR");
-        let mut path = PathBuf::from(manifest_path);
-        path.push("map.osu");
-        path
-    }
+    use super::Beatmap;
 
     #[test]
     fn test_create_map_from_path() {

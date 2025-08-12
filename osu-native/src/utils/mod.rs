@@ -1,8 +1,8 @@
-use std::{ffi::CString, ptr::null_mut};
+use std::{ffi::CString, path::PathBuf, ptr::null_mut};
 
 use libosu_native_sys::ErrorCode;
 
-use crate::error::{OsuError, error_code_to_native};
+use crate::error::{OsuError, error_code_to_osu};
 
 pub(crate) fn read_native_string(
     handle: i32,
@@ -13,7 +13,7 @@ pub(crate) fn read_native_string(
     unsafe {
         match func(handle, null_mut(), &raw mut size) {
             ErrorCode::BufferSizeQuery => {}
-            e => return Err(error_code_to_native(e).into()),
+            e => return Err(error_code_to_osu(e).into()),
         }
     }
     println!("{size}");
@@ -28,7 +28,14 @@ pub(crate) fn read_native_string(
                 let string = string.into_string().unwrap();
                 return Ok(string);
             }
-            e => return Err(error_code_to_native(e).into()),
+            e => return Err(error_code_to_osu(e).into()),
         }
     }
+}
+
+pub fn initialize_path() -> PathBuf {
+    let manifest_path = std::env!("CARGO_MANIFEST_DIR");
+    let mut path = PathBuf::from(manifest_path);
+    path.push("standard.osu");
+    path
 }

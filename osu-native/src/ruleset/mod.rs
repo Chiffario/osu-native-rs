@@ -3,7 +3,7 @@ use std::{error::Error, ffi::CString, fmt::Display, mem::MaybeUninit, ptr::null_
 use libosu_native_sys::{ErrorCode, NativeRuleset, Ruleset_CreateFromId, Ruleset_GetShortName};
 
 use crate::{
-    error::{NativeError, OsuError, error_code_to_native},
+    error::{NativeError, OsuError, error_code_to_osu},
     utils::read_native_string,
 };
 
@@ -73,9 +73,15 @@ impl From<OsuError> for RulesetError {
         Self::GenericError(value)
     }
 }
-struct Ruleset {
+pub struct Ruleset {
     handle: i32,
     ruleset: Rulesets,
+}
+
+impl Ruleset {
+    pub fn get_handle(&self) -> i32 {
+        self.handle
+    }
 }
 
 impl Ruleset {
@@ -84,7 +90,7 @@ impl Ruleset {
         let ruleset = unsafe {
             match Ruleset_CreateFromId(variant.into(), ruleset.as_mut_ptr()) {
                 ErrorCode::Success => Ok(ruleset.assume_init()),
-                e => Err(RulesetError::GenericError(error_code_to_native(e))),
+                e => Err(RulesetError::GenericError(error_code_to_osu(e))),
             }
         };
         ruleset.map(|r| Ruleset {
