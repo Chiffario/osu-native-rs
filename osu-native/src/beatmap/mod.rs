@@ -7,8 +7,8 @@ use libosu_native_sys::{
 use thiserror::Error as ThisError;
 
 use crate::{
-    error::{NativeError, OsuError},
-    utils::read_native_string,
+    error::NativeError,
+    utils::{HasNative, NativeType, StringError, read_native_string},
 };
 
 pub struct Beatmap {
@@ -33,6 +33,10 @@ impl Drop for Beatmap {
     }
 }
 
+impl HasNative for Beatmap {
+    type Native = NativeBeatmap;
+}
+
 impl From<NativeBeatmap> for Beatmap {
     fn from(value: NativeBeatmap) -> Self {
         Self {
@@ -52,43 +56,44 @@ pub enum BeatmapError {
     #[error("Specified path is invalid")]
     PathError,
     #[error("Native error")]
-    GenericError(#[from] OsuError),
-    #[error("Unknown error")]
-    UnknownError,
+    Native(#[from] NativeError),
 }
 
-impl From<NativeError> for BeatmapError {
-    fn from(value: NativeError) -> Self {
-        Self::GenericError(value.into())
+impl From<ErrorCode> for BeatmapError {
+    fn from(value: ErrorCode) -> Self {
+        Self::Native(value.into())
     }
 }
 
 impl Beatmap {
-    pub fn new_from_path(path: impl AsRef<Path>) -> Result<Self, BeatmapError> {
-        let path_str = path.as_ref().to_str().ok_or(BeatmapError::PathError)?;
-        let path_cstr = CString::new(path_str).map_err(|_| BeatmapError::PathError)?;
-        let mut beatmap: MaybeUninit<NativeBeatmap> = MaybeUninit::uninit();
-
-        let beatmap: Result<Beatmap, NativeError> = unsafe {
-            match Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) {
-                ErrorCode::Success => Ok(beatmap.assume_init().into()),
-                e => Err(e.into()),
-            }
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BeatmapError> {
+        let Some(Ok(path_cstr)) = path.as_ref().to_str().map(CString::new) else {
+            return Err(BeatmapError::PathError);
         };
 
-        beatmap.map_err(Into::into)
+        let mut beatmap: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
+
+        let code = unsafe { Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        let native = unsafe { beatmap.assume_init() };
+
+        Ok(native.into())
     }
 
-    pub fn title(&self) -> Result<String, BeatmapError> {
-        read_native_string(self.handle, Beatmap_GetTitle).map_err(Into::into)
+    pub fn title(&self) -> Result<String, StringError> {
+        read_native_string(self.handle, Beatmap_GetTitle)
     }
 
-    pub fn artist(&self) -> Result<String, BeatmapError> {
-        read_native_string(self.handle, Beatmap_GetArtist).map_err(Into::into)
+    pub fn artist(&self) -> Result<String, StringError> {
+        read_native_string(self.handle, Beatmap_GetArtist)
     }
 
-    pub fn version(&self) -> Result<String, BeatmapError> {
-        read_native_string(self.handle, Beatmap_GetVersion).map_err(Into::into)
+    pub fn version(&self) -> Result<String, StringError> {
+        read_native_string(self.handle, Beatmap_GetVersion)
     }
 }
 
@@ -100,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_create_map_from_path() {
-        let map = Beatmap::new_from_path(initialize_path()).unwrap();
+        let map = Beatmap::from_path(initialize_path()).unwrap();
         assert_eq!(map.approach_rate, 9.2);
         assert_eq!(map.overall_difficulty, 8.3);
         assert_eq!(map.drain_rate, 5.0);
@@ -111,12 +116,12 @@ mod tests {
 
     #[test]
     fn test_get_strings() {
-        let map = Beatmap::new_from_path(initialize_path()).unwrap();
+        let map = Beatmap::from_path(initialize_path()).unwrap();
         let title = map.title().unwrap();
-        assert_eq!(title, String::from("Toy Box"));
+        assert_eq!(title, "Toy Box");
         let artist = map.artist().unwrap();
-        assert_eq!(artist, String::from("John Grant"));
+        assert_eq!(artist, "John Grant");
         let version = map.version().unwrap();
-        assert_eq!(version, String::from("Expert"));
+        assert_eq!(version, "Expert");
     }
 }

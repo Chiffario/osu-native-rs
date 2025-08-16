@@ -9,21 +9,22 @@ pub enum NativeError {
     RulesetUnavailable,
     #[error("Beatmap file with specified path was not found")]
     BeatmapFileNotFound,
-    #[error("Unknown error")]
-    UnknownError,
+    #[error("Unknown error code: {0:?}")]
+    UnknownError(ErrorCode),
 }
 
 impl From<ErrorCode> for NativeError {
-    fn from(value: ErrorCode) -> Self {
-        match value {
+    fn from(code: ErrorCode) -> Self {
+        match code {
             ErrorCode::ObjectNotFound => Self::ObjectNotFound,
             ErrorCode::RulesetUnavailable => Self::RulesetUnavailable,
             ErrorCode::BeatmapFileNotFound => Self::BeatmapFileNotFound,
-            _ => Self::UnknownError,
+            _ => Self::UnknownError(code),
         }
     }
 }
 
+// TODO: split this type up into whatever is needed
 #[derive(Debug, ThisError)]
 pub enum OsuError {
     #[error("Library error, contact the developer")]
