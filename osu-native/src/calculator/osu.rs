@@ -111,7 +111,7 @@ mod tests {
     };
 
     #[test]
-    fn test_toy_box_standard() -> () {
+    fn test_toy_box_standard() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
         let calculator = OsuDifficultyCalculator::new(ruleset, beatmap).unwrap();
