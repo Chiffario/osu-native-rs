@@ -62,7 +62,7 @@ pub struct Ruleset {
 }
 
 impl Ruleset {
-    pub fn get_handle(&self) -> i32 {
+    pub fn handle(&self) -> i32 {
         self.handle
     }
 }
@@ -83,7 +83,7 @@ impl Ruleset {
         })
     }
 
-    pub fn get_short_name(&self) -> Result<String, RulesetError> {
+    pub fn short_name(&self) -> Result<String, RulesetError> {
         read_native_string(self.handle, Ruleset_GetShortName).map_err(Into::into)
     }
 }
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn test_get_name_standard() {
         let osu = Ruleset::new_from_variant(Rulesets::Standard).unwrap();
-        let _ = osu.get_short_name().unwrap();
+        let _ = osu.short_name().unwrap();
     }
 
     #[test]
@@ -127,10 +127,10 @@ mod tests {
         let taiko = Ruleset::new_from_variant(Rulesets::Taiko).unwrap();
 
         assert_eq!(
-            taiko.get_short_name().unwrap(),
+            taiko.short_name().unwrap(),
             String::from("taiko"),
             "Displayed {:?}",
-            taiko.get_short_name()
+            taiko.short_name()
         );
     }
 
@@ -139,10 +139,10 @@ mod tests {
         let catch = Ruleset::new_from_variant(Rulesets::Catch).unwrap();
 
         assert_eq!(
-            catch.get_short_name().unwrap(),
+            catch.short_name().unwrap(),
             String::from("fruits"),
             "Displayed {:?}",
-            catch.get_short_name()
+            catch.short_name()
         );
     }
 
@@ -151,10 +151,10 @@ mod tests {
         let mania = Ruleset::new_from_variant(Rulesets::Mania).unwrap();
 
         assert_eq!(
-            mania.get_short_name().unwrap(),
+            mania.short_name().unwrap(),
             String::from("mania"),
             "Displayed {:?}",
-            mania.get_short_name()
+            mania.short_name()
         );
     }
 }

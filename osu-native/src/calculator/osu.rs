@@ -27,8 +27,8 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
         let mut handle = 0;
         unsafe {
             match OsuDifficultyCalculator_Create(
-                ruleset.get_handle(),
-                beatmap.get_handle(),
+                ruleset.handle(),
+                beatmap.handle(),
                 &raw mut handle,
             ) {
                 ErrorCode::Success => Ok(Self { handle }),

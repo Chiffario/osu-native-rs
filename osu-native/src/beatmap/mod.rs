@@ -22,7 +22,7 @@ pub struct Beatmap {
 }
 
 impl Beatmap {
-    pub fn get_handle(&self) -> i32 {
+    pub fn handle(&self) -> i32 {
         self.handle
     }
 }
@@ -79,15 +79,15 @@ impl Beatmap {
         beatmap.map_err(Into::into)
     }
 
-    pub fn get_title(&self) -> Result<String, BeatmapError> {
+    pub fn title(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetTitle).map_err(Into::into)
     }
 
-    pub fn get_artist(&self) -> Result<String, BeatmapError> {
+    pub fn artist(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetArtist).map_err(Into::into)
     }
 
-    pub fn get_version(&self) -> Result<String, BeatmapError> {
+    pub fn version(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetVersion).map_err(Into::into)
     }
 }
@@ -112,11 +112,11 @@ mod tests {
     #[test]
     fn test_get_strings() {
         let map = Beatmap::new_from_path(initialize_path()).unwrap();
-        let title = map.get_title().unwrap();
+        let title = map.title().unwrap();
         assert_eq!(title, String::from("Toy Box"));
-        let artist = map.get_artist().unwrap();
+        let artist = map.artist().unwrap();
         assert_eq!(artist, String::from("John Grant"));
-        let version = map.get_version().unwrap();
+        let version = map.version().unwrap();
         assert_eq!(version, String::from("Expert"));
     }
 }

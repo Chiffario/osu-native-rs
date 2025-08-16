@@ -31,8 +31,8 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
 
         unsafe {
             match CatchDifficultyCalculator_Create(
-                ruleset.get_handle(),
-                beatmap.get_handle(),
+                ruleset.handle(),
+                beatmap.handle(),
                 &raw mut handle,
             ) {
                 ErrorCode::Success => Ok(Self { handle }),
