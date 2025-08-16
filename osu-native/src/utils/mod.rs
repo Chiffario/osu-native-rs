@@ -49,7 +49,7 @@ pub(crate) fn read_native_string(
         .try_into()
         .map_err(|_| StringError::InvalidLength(size))?;
 
-    let mut buffer = vec![0u8, len];
+    let mut buffer = vec![0u8; len];
 
     let code = unsafe { func(handle, buffer.as_mut_ptr(), &mut size) };
 
