@@ -89,7 +89,11 @@ pub struct NativeBeatmap {
     pub slider_multiplier: f64,
     pub slider_tick_rate: f64,
 }
-#[link(name = "osu.Native.so", modifiers = "+verbatim")]
+#[cfg_attr(target_os = "windows", link(name = "osu.Native", kind = "dylib"))]
+#[cfg_attr(
+    not(target_os = "windows"),
+    link(name = "osu.Native.so", modifiers = "+verbatim")
+)]
 unsafe extern "C" {
     // Mods
     pub fn Mod_Create(acronym: *const i8, mod_handle_ptr: *mut NativeModHandle) -> ErrorCode;
