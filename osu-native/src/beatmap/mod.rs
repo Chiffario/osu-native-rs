@@ -1,21 +1,16 @@
-use std::{
-    error::Error,
-    ffi::CString,
-    fmt::Display,
-    mem::MaybeUninit,
-    path::Path,
-    ptr::{null, null_mut},
-};
+use std::{ffi::CString, mem::MaybeUninit, path::Path};
 
 use libosu_native_sys::{
     Beatmap_CreateFromFile, Beatmap_Destroy, Beatmap_GetArtist, Beatmap_GetTitle,
-    Beatmap_GetVersion, ErrorCode, NativeBeatmap, NativeBeatmapHandle,
+    Beatmap_GetVersion, ErrorCode, NativeBeatmap,
 };
+use thiserror::Error as ThisError;
 
 use crate::{
-    error::{self, NativeError, OsuError, error_code_to_osu},
+    error::{NativeError, OsuError},
     utils::read_native_string,
 };
+
 pub struct Beatmap {
     handle: i32,
     pub approach_rate: f32,
@@ -25,6 +20,7 @@ pub struct Beatmap {
     pub slider_multiplier: f64,
     pub slider_tick_rate: f64,
 }
+
 impl Beatmap {
     pub fn get_handle(&self) -> i32 {
         self.handle
@@ -51,52 +47,46 @@ impl From<NativeBeatmap> for Beatmap {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, ThisError)]
 pub enum BeatmapError {
+    #[error("Specified path is invalid")]
     PathError,
-    GenericError(OsuError),
+    #[error("Native error")]
+    GenericError(#[from] OsuError),
+    #[error("Unknown error")]
     UnknownError,
 }
-impl Display for BeatmapError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BeatmapError::PathError => writeln!(f, "Specified path is invalid"),
-            BeatmapError::GenericError(native_error) => writeln!(f, "Native error: {native_error}"),
-            BeatmapError::UnknownError => writeln!(f, "Unknown error"),
-        }
-    }
-}
-impl Error for BeatmapError {}
-impl From<OsuError> for BeatmapError {
-    fn from(value: OsuError) -> Self {
-        Self::GenericError(value)
-    }
-}
+
 impl From<NativeError> for BeatmapError {
     fn from(value: NativeError) -> Self {
-        Self::GenericError(OsuError::NativeError(value))
+        Self::GenericError(value.into())
     }
 }
+
 impl Beatmap {
     pub fn new_from_path(path: impl AsRef<Path>) -> Result<Self, BeatmapError> {
         let path_str = path.as_ref().to_str().ok_or(BeatmapError::PathError)?;
         let path_cstr = CString::new(path_str).map_err(|_| BeatmapError::PathError)?;
         let mut beatmap: MaybeUninit<NativeBeatmap> = MaybeUninit::uninit();
+
         let beatmap: Result<Beatmap, NativeError> = unsafe {
             match Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) {
                 ErrorCode::Success => Ok(beatmap.assume_init().into()),
                 e => Err(e.into()),
             }
         };
+
         beatmap.map_err(Into::into)
     }
 
     pub fn get_title(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetTitle).map_err(Into::into)
     }
+
     pub fn get_artist(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetArtist).map_err(Into::into)
     }
+
     pub fn get_version(&self) -> Result<String, BeatmapError> {
         read_native_string(self.handle, Beatmap_GetVersion).map_err(Into::into)
     }

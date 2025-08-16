@@ -1,11 +1,11 @@
 use std::mem::MaybeUninit;
 
 use libosu_native_sys::{
-    NativeTaikoDifficultyAttributes, TaikoDifficultyCalculator_Calculate,
+    ErrorCode, NativeTaikoDifficultyAttributes, TaikoDifficultyCalculator_Calculate,
     TaikoDifficultyCalculator_Create, TaikoDifficultyCalculator_Destroy,
 };
 
-use crate::error::{OsuError, error_code_to_osu};
+use crate::error::OsuError;
 
 use super::DifficultyCalculator;
 
@@ -28,26 +28,29 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
         beatmap: crate::beatmap::Beatmap,
     ) -> Result<Self, OsuError> {
         let mut handle = 0;
+
         unsafe {
             match TaikoDifficultyCalculator_Create(
                 ruleset.get_handle(),
                 beatmap.get_handle(),
                 &raw mut handle,
             ) {
-                libosu_native_sys::ErrorCode::Success => Ok(Self { handle }),
-                e => Err(error_code_to_osu(e)),
+                ErrorCode::Success => Ok(Self { handle }),
+                e => Err(e.into()),
             }
         }
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
         let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
+
         let attributes = unsafe {
             match TaikoDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
-                libosu_native_sys::ErrorCode::Success => Ok(attributes.assume_init().into()),
-                e => Err(error_code_to_osu(e)),
+                ErrorCode::Success => Ok(attributes.assume_init().into()),
+                e => Err(e.into()),
             }
         };
+
         attributes
     }
 }
@@ -86,10 +89,7 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
 mod tests {
     use crate::{
         beatmap::Beatmap,
-        calculator::{
-            DifficultyCalculator,
-            taiko::{TaikoDifficultyAttributes, TaikoDifficultyCalculator},
-        },
+        calculator::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
         ruleset::{Ruleset, Rulesets},
         utils::initialize_path,
     };

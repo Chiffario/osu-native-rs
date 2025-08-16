@@ -5,7 +5,7 @@ use libosu_native_sys::{
     CatchDifficultyCalculator_Destroy, ErrorCode, NativeCatchDifficultyAttributes,
 };
 
-use crate::error::{OsuError, error_code_to_osu};
+use crate::error::OsuError;
 
 use super::DifficultyCalculator;
 
@@ -28,6 +28,7 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
         beatmap: crate::beatmap::Beatmap,
     ) -> Result<Self, OsuError> {
         let mut handle = 0;
+
         unsafe {
             match CatchDifficultyCalculator_Create(
                 ruleset.get_handle(),
@@ -35,19 +36,21 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
                 &raw mut handle,
             ) {
                 ErrorCode::Success => Ok(Self { handle }),
-                e => Err(error_code_to_osu(e)),
+                e => Err(e.into()),
             }
         }
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
         let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
+
         let attributes = unsafe {
             match CatchDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
                 ErrorCode::Success => Ok(attributes.assume_init().into()),
-                e => Err(error_code_to_osu(e)),
+                e => Err(e.into()),
             }
         };
+
         attributes
     }
 }

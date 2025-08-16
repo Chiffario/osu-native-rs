@@ -5,17 +5,14 @@ use libosu_native_sys::{
     OsuDifficultyCalculator_Create, OsuDifficultyCalculator_Destroy,
 };
 
-use crate::{
-    beatmap,
-    error::{NativeError, OsuError, error_code_to_osu},
-    ruleset,
-};
+use crate::{beatmap, error::OsuError, ruleset};
 
 use super::DifficultyCalculator;
 
 struct OsuDifficultyCalculator {
     handle: i32,
 }
+
 impl Drop for OsuDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { OsuDifficultyCalculator_Destroy(self.handle) };
@@ -35,19 +32,21 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
                 &raw mut handle,
             ) {
                 ErrorCode::Success => Ok(Self { handle }),
-                e => Err(error_code_to_osu(e)),
+                e => Err(e.into()),
             }
         }
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
         let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
+
         let attributes = unsafe {
             match OsuDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
                 ErrorCode::Success => Ok(attributes.assume_init().into()),
-                e => Err(error_code_to_osu(e)),
+                e => Err(e.into()),
             }
         };
+
         attributes
     }
 }
@@ -92,7 +91,7 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
 
 #[cfg(test)]
 mod tests {
-    use super::{OsuDifficultyAttributes, OsuDifficultyCalculator};
+    use super::OsuDifficultyCalculator;
     use crate::{
         beatmap::Beatmap,
         calculator::DifficultyCalculator,
