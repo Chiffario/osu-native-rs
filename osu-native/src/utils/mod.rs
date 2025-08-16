@@ -21,8 +21,8 @@ pub enum StringError {
     InvalidLength(i32),
     #[error("Received invalid string")]
     InvalidNul(#[from] FromVecWithNulError),
-    #[error("Received invalid utf8 string: {0:?}")]
-    InvalidUtf8(CString),
+    #[error("Received invalid utf8 string")]
+    InvalidUtf8(#[from] IntoStringError),
     #[error("Native error")]
     Native(#[from] NativeError),
 }
@@ -59,8 +59,7 @@ pub(crate) fn read_native_string(
 
     CString::from_vec_with_nul(buffer)?
         .into_string()
-        .map_err(IntoStringError::into_cstring)
-        .map_err(StringError::InvalidUtf8)
+        .map_err(Into::into)
 }
 
 #[cfg(test)]
