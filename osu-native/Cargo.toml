@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 libosu-native-sys = { path = "../libosu-native-sys" }
+thiserror = "2.0.14"

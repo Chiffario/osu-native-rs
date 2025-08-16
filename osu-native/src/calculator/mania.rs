@@ -5,48 +5,56 @@ use libosu_native_sys::{
     ManiaDifficultyCalculator_Destroy, NativeManiaDifficultyAttributes,
 };
 
-use crate::error::{OsuError, error_code_to_osu};
+use crate::{
+    beatmap::Beatmap,
+    error::OsuError,
+    ruleset::Ruleset,
+    utils::{HasNative, NativeType},
+};
 
 use super::DifficultyCalculator;
 
-struct ManiaDifficultyCalculator {
+#[derive(PartialEq, Eq)]
+pub struct ManiaDifficultyCalculator {
     handle: i32,
 }
+
 impl Drop for ManiaDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { ManiaDifficultyCalculator_Destroy(self.handle) };
     }
 }
+
 impl DifficultyCalculator for ManiaDifficultyCalculator {
     type Attributes = ManiaDifficultyAttributes;
-    type NativeAttributes = NativeManiaDifficultyAttributes;
 
-    fn new(
-        ruleset: crate::ruleset::Ruleset,
-        beatmap: crate::beatmap::Beatmap,
-    ) -> Result<Self, OsuError> {
+    fn new(ruleset: Ruleset, beatmap: Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
-        unsafe {
-            match ManiaDifficultyCalculator_Create(
-                ruleset.get_handle(),
-                beatmap.get_handle(),
-                &raw mut handle,
-            ) {
-                ErrorCode::Success => Ok(Self { handle }),
-                e => Err(error_code_to_osu(e)),
-            }
+
+        let code = unsafe {
+            ManiaDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
+        };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
         }
+
+        Ok(Self { handle })
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
-        let attributes = unsafe {
-            match ManiaDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
-                ErrorCode::Success => Ok(attributes.assume_init().into()),
-                e => Err(error_code_to_osu(e)),
-            }
-        };
-        attributes
+        let mut attributes: MaybeUninit<NativeType<Self::Attributes>> = MaybeUninit::uninit();
+
+        let code =
+            unsafe { ManiaDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        let native = unsafe { attributes.assume_init() };
+
+        Ok(native.into())
     }
 }
 
@@ -64,19 +72,23 @@ pub struct ManiaDifficultyAttributes {
     pub max_combo: usize,
 }
 
+impl HasNative for ManiaDifficultyAttributes {
+    type Native = NativeManiaDifficultyAttributes;
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         beatmap::Beatmap,
         calculator::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
-        ruleset::{Ruleset, Rulesets},
+        ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
     fn test_toy_box_convert_mania() {
-        let beatmap = Beatmap::new_from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new_from_variant(Rulesets::Mania).unwrap();
+        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Mania).unwrap();
         let calculator = ManiaDifficultyCalculator::new(ruleset, beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_eq!(attributes.star_rating, 3.8214955335276204);

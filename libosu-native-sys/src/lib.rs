@@ -56,7 +56,7 @@ pub struct NativeScoreHitStatistics {
 }
 
 #[repr(i8)]
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ErrorCode {
     BufferSizeQuery = -1,
     Success = 0,
