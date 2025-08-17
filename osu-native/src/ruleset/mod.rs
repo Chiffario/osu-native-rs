@@ -61,6 +61,7 @@ impl From<ErrorCode> for RulesetError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Ruleset {
     handle: i32,
     pub kind: RulesetKind,

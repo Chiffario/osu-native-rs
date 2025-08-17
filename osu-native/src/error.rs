@@ -1,6 +1,8 @@
 use libosu_native_sys::ErrorCode;
 use thiserror::Error as ThisError;
 
+use crate::mods::native::ModError;
+
 #[derive(Debug, ThisError)]
 pub enum NativeError {
     #[error("Native object not found")]
@@ -31,6 +33,8 @@ impl From<ErrorCode> for NativeError {
 pub enum OsuError {
     #[error("Library error, contact the developer")]
     LogicError,
+    #[error("GameMod error")]
+    Mods(#[from] ModError),
     #[error("Native error")]
     NativeError(#[from] NativeError),
     #[error("Unknown error")]

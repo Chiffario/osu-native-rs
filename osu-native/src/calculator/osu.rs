@@ -1,22 +1,28 @@
 use std::mem::MaybeUninit;
 
 use libosu_native_sys::{
-    ErrorCode, NativeOsuDifficultyAttributes, OsuDifficultyCalculator_Calculate,
+    ErrorCode, NativeOsuDifficultyAttributes, OsuDifficultyCalculator_CalculateMods,
     OsuDifficultyCalculator_Create, OsuDifficultyCalculator_Destroy,
 };
 
 use crate::{
     beatmap::Beatmap,
     error::OsuError,
+    mods::{
+        GameMods, GameModsError, IntoGameMods,
+        native::{Mod, ModCollection},
+    },
     ruleset::Ruleset,
-    utils::{HasNative, NativeType},
+    utils::HasNative,
 };
 
 use super::DifficultyCalculator;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq)]
 pub struct OsuDifficultyCalculator {
     handle: i32,
+    ruleset: Ruleset,
+    mods: GameMods,
 }
 
 impl Drop for OsuDifficultyCalculator {
@@ -28,7 +34,7 @@ impl Drop for OsuDifficultyCalculator {
 impl DifficultyCalculator for OsuDifficultyCalculator {
     type Attributes = OsuDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: Beatmap) -> Result<Self, OsuError> {
+    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
 
         let code = unsafe {
@@ -39,14 +45,48 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
             return Err(code.into());
         }
 
-        Ok(Self { handle })
+        Ok(Self {
+            handle,
+            ruleset,
+            mods: GameMods::default(),
+        })
+    }
+
+    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
+        self.mods = mods.into_mods()?;
+
+        Ok(self)
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mut attributes: MaybeUninit<NativeType<Self::Attributes>> = MaybeUninit::uninit();
+        let mod_collection = ModCollection::new()?;
 
-        let code =
-            unsafe { OsuDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) };
+        let mods = self
+            .mods
+            .0
+            .iter()
+            .map(|gamemod| {
+                let m = Mod::new(gamemod.acronym.as_str())?;
+                m.apply_settings(&gamemod.settings)?;
+
+                Ok(m)
+            })
+            .collect::<Result<Vec<_>, OsuError>>()?;
+
+        for gamemod in mods.iter() {
+            mod_collection.add(gamemod)?;
+        }
+
+        let mut attributes = MaybeUninit::uninit();
+
+        let code = unsafe {
+            OsuDifficultyCalculator_CalculateMods(
+                self.handle,
+                self.ruleset.handle(),
+                mod_collection.handle(),
+                attributes.as_mut_ptr(),
+            )
+        };
 
         if code != ErrorCode::Success {
             return Err(code.into());
@@ -58,6 +98,7 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct OsuDifficultyAttributes {
     pub star_rating: f64,
     pub max_combo: usize,
@@ -111,10 +152,10 @@ mod tests {
     };
 
     #[test]
-    fn test_toy_box_standard() {
+    fn test_toy_box_osu() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator = OsuDifficultyCalculator::new(ruleset, beatmap).unwrap();
+        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 719);
