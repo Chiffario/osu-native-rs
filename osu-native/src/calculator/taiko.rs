@@ -1,56 +1,52 @@
 use std::mem::MaybeUninit;
 
 use libosu_native_sys::{
-    ErrorCode, NativeTaikoDifficultyAttributes, TaikoDifficultyCalculator_CalculateMods,
+    ErrorCode, NativeTaikoDifficultyAttributes, NativeTaikoDifficultyCalculator,
+    NativeTaikoDifficultyCalculatorHandle, TaikoDifficultyCalculator_CalculateMods,
     TaikoDifficultyCalculator_Create, TaikoDifficultyCalculator_Destroy,
 };
 
 use crate::{
-    beatmap::Beatmap,
+    calculator::CreateFn,
     error::OsuError,
     mods::{
         GameMods, GameModsError, IntoGameMods,
         native::{Mod, ModCollection},
     },
     ruleset::Ruleset,
-    utils::HasNative,
+    traits::Native,
 };
 
 use super::DifficultyCalculator;
 
-#[derive(PartialEq)]
-pub struct TaikoDifficultyCalculator {
-    handle: i32,
-    ruleset: Ruleset,
-    mods: GameMods,
-}
-
-impl Drop for TaikoDifficultyCalculator {
-    fn drop(&mut self) {
-        unsafe { TaikoDifficultyCalculator_Destroy(self.handle) };
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq)]
+    pub struct TaikoDifficultyCalculator {
+        native: NativeTaikoDifficultyCalculator,
+        ruleset: Ruleset,
+        mods: GameMods,
     }
 }
+
+impl From<(NativeTaikoDifficultyCalculator, Ruleset)> for TaikoDifficultyCalculator {
+    fn from((native, ruleset): (NativeTaikoDifficultyCalculator, Ruleset)) -> Self {
+        Self {
+            native,
+            ruleset,
+            mods: GameMods::default(),
+        }
+    }
+}
+
+impl_native!(
+    NativeTaikoDifficultyCalculator:
+        NativeTaikoDifficultyCalculatorHandle, TaikoDifficultyCalculator_Destroy
+);
 
 impl DifficultyCalculator for TaikoDifficultyCalculator {
     type Attributes = TaikoDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
-        let mut handle = 0;
-
-        let code = unsafe {
-            TaikoDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
-        };
-
-        if code != ErrorCode::Success {
-            return Err(code.into());
-        }
-
-        Ok(Self {
-            handle,
-            ruleset,
-            mods: GameMods::default(),
-        })
-    }
+    const CREATE: CreateFn<Self::Native> = TaikoDifficultyCalculator_Create;
 
     fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
@@ -111,10 +107,6 @@ pub struct TaikoDifficultyAttributes {
     pub stamina_top_strains: f64,
 }
 
-impl HasNative for TaikoDifficultyAttributes {
-    type Native = NativeTaikoDifficultyAttributes;
-}
-
 impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
     fn from(value: NativeTaikoDifficultyAttributes) -> Self {
         Self {
@@ -148,8 +140,8 @@ mod tests {
     #[test]
     fn test_toy_box_convert_taiko() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::from_kind(RulesetKind::Taiko).unwrap();
+        let calculator = TaikoDifficultyCalculator::create(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 709);
@@ -165,16 +157,16 @@ mod tests {
     #[test]
     fn test_toy_box_taiko_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::from_kind(RulesetKind::Taiko).unwrap();
+        let calculator = TaikoDifficultyCalculator::create(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator_with_mods = TaikoDifficultyCalculator::new(ruleset, &beatmap)
+        let ruleset = Ruleset::from_kind(RulesetKind::Taiko).unwrap();
+        let calculator_with_mods = TaikoDifficultyCalculator::create(ruleset, &beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();

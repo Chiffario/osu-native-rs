@@ -3,54 +3,50 @@ use std::mem::MaybeUninit;
 use libosu_native_sys::{
     CatchDifficultyCalculator_CalculateMods, CatchDifficultyCalculator_Create,
     CatchDifficultyCalculator_Destroy, ErrorCode, NativeCatchDifficultyAttributes,
+    NativeCatchDifficultyCalculator, NativeCatchDifficultyCalculatorHandle,
 };
 
 use crate::{
-    beatmap::Beatmap,
+    calculator::CreateFn,
     error::OsuError,
     mods::{
         GameMods, GameModsError, IntoGameMods,
         native::{Mod, ModCollection},
     },
     ruleset::Ruleset,
-    utils::HasNative,
+    traits::Native,
 };
 
 use super::DifficultyCalculator;
 
-#[derive(PartialEq)]
-pub struct CatchDifficultyCalculator {
-    handle: i32,
-    ruleset: Ruleset,
-    mods: GameMods,
-}
-
-impl Drop for CatchDifficultyCalculator {
-    fn drop(&mut self) {
-        unsafe { CatchDifficultyCalculator_Destroy(self.handle) };
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq)]
+    pub struct CatchDifficultyCalculator {
+        native: NativeCatchDifficultyCalculator,
+        ruleset: Ruleset,
+        mods: GameMods,
     }
 }
+
+impl From<(NativeCatchDifficultyCalculator, Ruleset)> for CatchDifficultyCalculator {
+    fn from((native, ruleset): (NativeCatchDifficultyCalculator, Ruleset)) -> Self {
+        Self {
+            native,
+            ruleset,
+            mods: GameMods::default(),
+        }
+    }
+}
+
+impl_native!(
+    NativeCatchDifficultyCalculator:
+        NativeCatchDifficultyCalculatorHandle, CatchDifficultyCalculator_Destroy
+);
 
 impl DifficultyCalculator for CatchDifficultyCalculator {
     type Attributes = CatchDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
-        let mut handle = 0;
-
-        let code = unsafe {
-            CatchDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
-        };
-
-        if code != ErrorCode::Success {
-            return Err(code.into());
-        }
-
-        Ok(Self {
-            handle,
-            ruleset,
-            mods: GameMods::default(),
-        })
-    }
+    const CREATE: CreateFn<Self::Native> = CatchDifficultyCalculator_Create;
 
     fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
@@ -81,7 +77,7 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
 
         let code = unsafe {
             CatchDifficultyCalculator_CalculateMods(
-                self.handle,
+                self.handle(),
                 self.ruleset.handle(),
                 mods.handle(),
                 attributes.as_mut_ptr(),
@@ -112,10 +108,6 @@ pub struct CatchDifficultyAttributes {
     pub max_combo: usize,
 }
 
-impl HasNative for CatchDifficultyAttributes {
-    type Native = NativeCatchDifficultyAttributes;
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -132,8 +124,8 @@ mod tests {
     #[test]
     fn test_toy_box_convert_catch() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::from_kind(RulesetKind::Catch).unwrap();
+        let calculator = CatchDifficultyCalculator::create(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 717);
@@ -141,16 +133,16 @@ mod tests {
     #[test]
     fn test_toy_box_catch_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::from_kind(RulesetKind::Catch).unwrap();
+        let calculator = CatchDifficultyCalculator::create(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator_with_mods = CatchDifficultyCalculator::new(ruleset, &beatmap)
+        let ruleset = Ruleset::from_kind(RulesetKind::Catch).unwrap();
+        let calculator_with_mods = CatchDifficultyCalculator::create(ruleset, &beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();

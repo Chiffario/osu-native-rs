@@ -2,54 +2,22 @@ use std::{ffi::CString, mem::MaybeUninit, path::Path};
 
 use libosu_native_sys::{
     Beatmap_CreateFromFile, Beatmap_Destroy, Beatmap_GetArtist, Beatmap_GetTitle,
-    Beatmap_GetVersion, ErrorCode, NativeBeatmap,
+    Beatmap_GetVersion, ErrorCode, NativeBeatmap, NativeBeatmapHandle,
 };
 use thiserror::Error as ThisError;
 
 use crate::{
     error::NativeError,
-    utils::{HasNative, NativeType, StringError, read_native_string},
+    traits::Native,
+    utils::{StringError, read_native_string},
 };
 
-pub struct Beatmap {
-    handle: i32,
-    pub approach_rate: f32,
-    pub drain_rate: f32,
-    pub overall_difficulty: f32,
-    pub circle_size: f32,
-    pub slider_multiplier: f64,
-    pub slider_tick_rate: f64,
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq)]
+    pub struct Beatmap(NativeBeatmap);
 }
 
-impl Beatmap {
-    pub fn handle(&self) -> i32 {
-        self.handle
-    }
-}
-
-impl Drop for Beatmap {
-    fn drop(&mut self) {
-        unsafe { Beatmap_Destroy(self.handle) };
-    }
-}
-
-impl HasNative for Beatmap {
-    type Native = NativeBeatmap;
-}
-
-impl From<NativeBeatmap> for Beatmap {
-    fn from(value: NativeBeatmap) -> Self {
-        Self {
-            handle: value.handle,
-            approach_rate: value.approach_rate,
-            drain_rate: value.drain_rate,
-            overall_difficulty: value.overall_difficulty,
-            circle_size: value.circle_size,
-            slider_multiplier: value.slider_multiplier,
-            slider_tick_rate: value.slider_tick_rate,
-        }
-    }
-}
+impl_native!(NativeBeatmap: NativeBeatmapHandle, Beatmap_Destroy);
 
 #[derive(Debug, ThisError)]
 pub enum BeatmapError {
@@ -71,8 +39,7 @@ impl Beatmap {
             return Err(BeatmapError::PathError);
         };
 
-        let mut beatmap: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
-
+        let mut beatmap = MaybeUninit::uninit();
         let code = unsafe { Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) };
 
         if code != ErrorCode::Success {
@@ -81,19 +48,19 @@ impl Beatmap {
 
         let native = unsafe { beatmap.assume_init() };
 
-        Ok(native.into())
+        Ok(Self(native))
     }
 
     pub fn title(&self) -> Result<String, StringError> {
-        read_native_string(self.handle, Beatmap_GetTitle)
+        read_native_string(self.handle(), Beatmap_GetTitle)
     }
 
     pub fn artist(&self) -> Result<String, StringError> {
-        read_native_string(self.handle, Beatmap_GetArtist)
+        read_native_string(self.handle(), Beatmap_GetArtist)
     }
 
     pub fn version(&self) -> Result<String, StringError> {
-        read_native_string(self.handle, Beatmap_GetVersion)
+        read_native_string(self.handle(), Beatmap_GetVersion)
     }
 }
 

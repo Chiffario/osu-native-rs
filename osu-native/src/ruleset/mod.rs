@@ -1,11 +1,15 @@
 use std::mem::MaybeUninit;
 
-use libosu_native_sys::{ErrorCode, NativeRuleset, Ruleset_CreateFromId, Ruleset_GetShortName};
+use libosu_native_sys::{
+    ErrorCode, NativeRuleset, NativeRulesetHandle, Ruleset_CreateFromId, Ruleset_Destroy,
+    Ruleset_GetShortName,
+};
 use thiserror::Error as ThisError;
 
 use crate::{
     error::NativeError,
-    utils::{HasNative, NativeType, StringError, read_native_string},
+    traits::Native,
+    utils::{StringError, read_native_string},
 };
 
 #[non_exhaustive]
@@ -47,36 +51,16 @@ impl TryFrom<i32> for RulesetKind {
     }
 }
 
-#[derive(Debug, ThisError)]
-pub enum RulesetError {
-    #[error(transparent)]
-    InvalidRuleset(#[from] InvalidRulesetId),
-    #[error("Native error")]
-    Native(#[from] NativeError),
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct Ruleset(NativeRuleset);
 }
 
-impl From<ErrorCode> for RulesetError {
-    fn from(code: ErrorCode) -> Self {
-        Self::Native(code.into())
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Ruleset {
-    handle: i32,
-    pub kind: RulesetKind,
-}
+impl_native!(NativeRuleset: NativeRulesetHandle, Ruleset_Destroy);
 
 impl Ruleset {
-    pub fn handle(&self) -> i32 {
-        self.handle
-    }
-}
-
-impl Ruleset {
-    pub fn new(kind: RulesetKind) -> Result<Self, RulesetError> {
-        let mut native: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
-
+    pub fn from_kind(kind: RulesetKind) -> Result<Self, NativeError> {
+        let mut native = MaybeUninit::uninit();
         let code = unsafe { Ruleset_CreateFromId(kind.into(), native.as_mut_ptr()) };
 
         if code != ErrorCode::Success {
@@ -85,19 +69,16 @@ impl Ruleset {
 
         let native = unsafe { native.assume_init() };
 
-        Ok(Self {
-            kind: native.id.try_into()?,
-            handle: native.handle,
-        })
+        Ok(Self(native))
     }
 
     pub fn short_name(&self) -> Result<String, StringError> {
-        read_native_string(self.handle, Ruleset_GetShortName)
+        read_native_string(self.handle(), Ruleset_GetShortName)
     }
-}
 
-impl HasNative for Ruleset {
-    type Native = NativeRuleset;
+    pub fn kind(&self) -> Result<RulesetKind, InvalidRulesetId> {
+        self.id.try_into()
+    }
 }
 
 #[cfg(test)]
@@ -106,49 +87,49 @@ mod tests {
 
     #[test]
     fn test_create_osu() {
-        let osu = Ruleset::new(RulesetKind::Osu).unwrap();
-        assert_eq!(osu.kind, RulesetKind::Osu);
+        let osu = Ruleset::from_kind(RulesetKind::Osu).unwrap();
+        assert_eq!(osu.kind().unwrap(), RulesetKind::Osu);
     }
 
     #[test]
     fn test_create_taiko() {
-        let taiko = Ruleset::new(RulesetKind::Taiko).unwrap();
-        assert_eq!(taiko.kind, RulesetKind::Taiko);
+        let taiko = Ruleset::from_kind(RulesetKind::Taiko).unwrap();
+        assert_eq!(taiko.kind().unwrap(), RulesetKind::Taiko);
     }
 
     #[test]
     fn test_create_catch() {
-        let catch = Ruleset::new(RulesetKind::Catch).unwrap();
-        assert_eq!(catch.kind, RulesetKind::Catch);
+        let catch = Ruleset::from_kind(RulesetKind::Catch).unwrap();
+        assert_eq!(catch.kind().unwrap(), RulesetKind::Catch);
     }
 
     #[test]
     fn test_create_mania() {
-        let mania = Ruleset::new(RulesetKind::Mania).unwrap();
-        assert_eq!(mania.kind, RulesetKind::Mania);
+        let mania = Ruleset::from_kind(RulesetKind::Mania).unwrap();
+        assert_eq!(mania.kind().unwrap(), RulesetKind::Mania);
     }
 
     #[test]
     fn test_get_name_osu() {
-        let osu = Ruleset::new(RulesetKind::Osu).unwrap();
+        let osu = Ruleset::from_kind(RulesetKind::Osu).unwrap();
         assert_eq!(osu.short_name().unwrap(), "osu");
     }
 
     #[test]
     fn test_get_name_taiko() {
-        let taiko = Ruleset::new(RulesetKind::Taiko).unwrap();
+        let taiko = Ruleset::from_kind(RulesetKind::Taiko).unwrap();
         assert_eq!(taiko.short_name().unwrap(), "taiko");
     }
 
     #[test]
     fn test_get_name_catch() {
-        let catch = Ruleset::new(RulesetKind::Catch).unwrap();
+        let catch = Ruleset::from_kind(RulesetKind::Catch).unwrap();
         assert_eq!(catch.short_name().unwrap(), "fruits");
     }
 
     #[test]
     fn test_get_name_mania() {
-        let mania = Ruleset::new(RulesetKind::Mania).unwrap();
+        let mania = Ruleset::from_kind(RulesetKind::Mania).unwrap();
         assert_eq!(mania.short_name().unwrap(), "mania");
     }
 }
