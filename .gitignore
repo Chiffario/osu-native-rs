@@ -1,2 +1,4 @@
 /target
+/.cargo
 osu.Native.so
+osu.Native.lib
