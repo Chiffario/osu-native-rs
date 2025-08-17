@@ -62,7 +62,8 @@ pub enum ErrorCode {
     Success = 0,
     ObjectNotFound = 1,
     RulesetUnavailable = 2,
-    BeatmapFileNotFound = 3,
+    UnexpectedRuleset = 3,
+    BeatmapFileNotFound = 4,
     Failure = 127,
 }
 

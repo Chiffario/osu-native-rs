@@ -7,6 +7,8 @@ pub enum NativeError {
     ObjectNotFound,
     #[error("Specified ruleset is unavailable")]
     RulesetUnavailable,
+    #[error("Specified ruleset isn't expected in operation context")]
+    UnexpectedRuleset,
     #[error("Beatmap file with specified path was not found")]
     BeatmapFileNotFound,
     #[error("Unknown error code: {0:?}")]
