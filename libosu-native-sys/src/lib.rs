@@ -2,7 +2,7 @@
 #[repr(C)]
 pub struct NativeOsuDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: f64,
+    pub max_combo: i32,
     pub aim_difficulty: f64,
     pub aim_difficulty_slider_count: f64,
     pub speed_difficulty: f64,
@@ -20,13 +20,13 @@ pub struct NativeOsuDifficultyAttributes {
 #[repr(C)]
 pub struct NativeManiaDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: f64,
+    pub max_combo: i32,
 }
 
 #[repr(C)]
 pub struct NativeTaikoDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: f64,
+    pub max_combo: i32,
     pub rhythm_difficulty: f64,
     pub reading_difficulty: f64,
     pub colour_difficulty: f64,
@@ -40,7 +40,7 @@ pub struct NativeTaikoDifficultyAttributes {
 #[repr(C)]
 pub struct NativeCatchDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: f64,
+    pub max_combo: i32,
 }
 
 #[repr(C)]
