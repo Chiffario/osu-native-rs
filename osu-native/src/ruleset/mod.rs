@@ -1,165 +1,153 @@
-use std::{error::Error, ffi::CString, fmt::Display, mem::MaybeUninit, ptr::null_mut};
+use std::mem::MaybeUninit;
 
 use libosu_native_sys::{ErrorCode, NativeRuleset, Ruleset_CreateFromId, Ruleset_GetShortName};
+use thiserror::Error as ThisError;
 
 use crate::{
-    error::{NativeError, OsuError, error_code_to_osu},
-    utils::read_native_string,
+    error::NativeError,
+    utils::{HasNative, NativeType, StringError, read_native_string},
 };
 
 #[non_exhaustive]
-#[derive(Debug, PartialEq, Eq)]
-pub enum Rulesets {
-    Standard = 0,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum RulesetKind {
+    #[default]
+    Osu = 0,
     Taiko = 1,
     Catch = 2,
     Mania = 3,
 }
 
-impl From<Rulesets> for i32 {
-    fn from(value: Rulesets) -> Self {
-        match value {
-            Rulesets::Standard => 0,
-            Rulesets::Taiko => 1,
-            Rulesets::Catch => 2,
-            Rulesets::Mania => 3,
+impl From<RulesetKind> for i32 {
+    fn from(kind: RulesetKind) -> Self {
+        match kind {
+            RulesetKind::Osu => 0,
+            RulesetKind::Taiko => 1,
+            RulesetKind::Catch => 2,
+            RulesetKind::Mania => 3,
         }
     }
 }
 
-impl TryFrom<i32> for Rulesets {
-    type Error = RulesetError;
+#[derive(Debug, ThisError)]
+#[error("Invalid ruleset ID {0}")]
+pub struct InvalidRulesetId(i32);
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Rulesets::Standard),
-            1 => Ok(Rulesets::Taiko),
-            2 => Ok(Rulesets::Catch),
-            3 => Ok(Rulesets::Mania),
-            _ => Err(Self::Error::InvalidRuleset),
+impl TryFrom<i32> for RulesetKind {
+    type Error = InvalidRulesetId;
+
+    fn try_from(id: i32) -> Result<Self, Self::Error> {
+        match id {
+            0 => Ok(RulesetKind::Osu),
+            1 => Ok(RulesetKind::Taiko),
+            2 => Ok(RulesetKind::Catch),
+            3 => Ok(RulesetKind::Mania),
+            _ => Err(InvalidRulesetId(id)),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, ThisError)]
 pub enum RulesetError {
-    InvalidRuleset,
-    GenericError(OsuError),
+    #[error(transparent)]
+    InvalidRuleset(#[from] InvalidRulesetId),
+    #[error("Native error")]
+    Native(#[from] NativeError),
 }
-impl Display for RulesetError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RulesetError::InvalidRuleset => writeln!(f, "Invalid ruleset ID"),
-            RulesetError::GenericError(native_error) => writeln!(f, "Native error: {native_error}"),
-        }
+
+impl From<ErrorCode> for RulesetError {
+    fn from(code: ErrorCode) -> Self {
+        Self::Native(code.into())
     }
 }
 
-impl Error for RulesetError {}
-
-impl From<NativeError> for RulesetError {
-    fn from(value: NativeError) -> Self {
-        Self::GenericError(value.into())
-    }
-}
-
-impl From<NativeError> for OsuError {
-    fn from(value: NativeError) -> Self {
-        Self::NativeError(value)
-    }
-}
-impl From<OsuError> for RulesetError {
-    fn from(value: OsuError) -> Self {
-        Self::GenericError(value)
-    }
-}
 pub struct Ruleset {
     handle: i32,
-    ruleset: Rulesets,
+    pub kind: RulesetKind,
 }
 
 impl Ruleset {
-    pub fn get_handle(&self) -> i32 {
+    pub fn handle(&self) -> i32 {
         self.handle
     }
 }
 
 impl Ruleset {
-    pub fn new_from_variant(variant: Rulesets) -> Result<Self, RulesetError> {
-        let mut ruleset: MaybeUninit<NativeRuleset> = MaybeUninit::uninit();
-        let ruleset = unsafe {
-            match Ruleset_CreateFromId(variant.into(), ruleset.as_mut_ptr()) {
-                ErrorCode::Success => Ok(ruleset.assume_init()),
-                e => Err(RulesetError::GenericError(error_code_to_osu(e))),
-            }
-        };
-        ruleset.map(|r| Ruleset {
-            handle: r.handle,
-            ruleset: r.id.try_into().unwrap(),
+    pub fn new(kind: RulesetKind) -> Result<Self, RulesetError> {
+        let mut native: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
+
+        let code = unsafe { Ruleset_CreateFromId(kind.into(), native.as_mut_ptr()) };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        let native = unsafe { native.assume_init() };
+
+        Ok(Self {
+            kind: native.id.try_into()?,
+            handle: native.handle,
         })
     }
-    pub fn get_short_name(&self) -> Result<String, RulesetError> {
-        read_native_string(self.handle, Ruleset_GetShortName).map_err(Into::into)
+
+    pub fn short_name(&self) -> Result<String, StringError> {
+        read_native_string(self.handle, Ruleset_GetShortName)
     }
+}
+
+impl HasNative for Ruleset {
+    type Native = NativeRuleset;
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Ruleset, Rulesets};
+    use super::{Ruleset, RulesetKind};
 
     #[test]
-    fn test_create_standard() {
-        let osu = Ruleset::new_from_variant(Rulesets::Standard).unwrap();
-        assert_eq!(osu.ruleset, Rulesets::Standard);
+    fn test_create_osu() {
+        let osu = Ruleset::new(RulesetKind::Osu).unwrap();
+        assert_eq!(osu.kind, RulesetKind::Osu);
     }
+
     #[test]
     fn test_create_taiko() {
-        let taiko = Ruleset::new_from_variant(Rulesets::Taiko).unwrap();
-        assert_eq!(taiko.ruleset, Rulesets::Taiko);
+        let taiko = Ruleset::new(RulesetKind::Taiko).unwrap();
+        assert_eq!(taiko.kind, RulesetKind::Taiko);
     }
+
     #[test]
     fn test_create_catch() {
-        let catch = Ruleset::new_from_variant(Rulesets::Catch).unwrap();
-        assert_eq!(catch.ruleset, Rulesets::Catch);
+        let catch = Ruleset::new(RulesetKind::Catch).unwrap();
+        assert_eq!(catch.kind, RulesetKind::Catch);
     }
+
     #[test]
     fn test_create_mania() {
-        let mania = Ruleset::new_from_variant(Rulesets::Mania).unwrap();
-        assert_eq!(mania.ruleset, Rulesets::Mania);
+        let mania = Ruleset::new(RulesetKind::Mania).unwrap();
+        assert_eq!(mania.kind, RulesetKind::Mania);
     }
+
     #[test]
-    fn test_get_name_standard() {
-        let osu = Ruleset::new_from_variant(Rulesets::Standard).unwrap();
-        let _ = osu.get_short_name().unwrap();
+    fn test_get_name_osu() {
+        let osu = Ruleset::new(RulesetKind::Osu).unwrap();
+        assert_eq!(osu.short_name().unwrap(), "osu");
     }
+
     #[test]
     fn test_get_name_taiko() {
-        let taiko = Ruleset::new_from_variant(Rulesets::Taiko).unwrap();
-        assert_eq!(
-            taiko.get_short_name().unwrap(),
-            String::from("taiko"),
-            "Displayed {:?}",
-            taiko.get_short_name()
-        );
+        let taiko = Ruleset::new(RulesetKind::Taiko).unwrap();
+        assert_eq!(taiko.short_name().unwrap(), "taiko");
     }
+
     #[test]
     fn test_get_name_catch() {
-        let catch = Ruleset::new_from_variant(Rulesets::Catch).unwrap();
-        assert_eq!(
-            catch.get_short_name().unwrap(),
-            String::from("fruits"),
-            "Displayed {:?}",
-            catch.get_short_name()
-        );
+        let catch = Ruleset::new(RulesetKind::Catch).unwrap();
+        assert_eq!(catch.short_name().unwrap(), "fruits");
     }
+
     #[test]
     fn test_get_name_mania() {
-        let mania = Ruleset::new_from_variant(Rulesets::Mania).unwrap();
-        assert_eq!(
-            mania.get_short_name().unwrap(),
-            String::from("mania"),
-            "Displayed {:?}",
-            mania.get_short_name()
-        );
+        let mania = Ruleset::new(RulesetKind::Mania).unwrap();
+        assert_eq!(mania.short_name().unwrap(), "mania");
     }
 }

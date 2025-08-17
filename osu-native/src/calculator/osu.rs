@@ -6,16 +6,19 @@ use libosu_native_sys::{
 };
 
 use crate::{
-    beatmap,
-    error::{NativeError, OsuError, error_code_to_osu},
-    ruleset,
+    beatmap::Beatmap,
+    error::OsuError,
+    ruleset::Ruleset,
+    utils::{HasNative, NativeType},
 };
 
 use super::DifficultyCalculator;
 
-struct OsuDifficultyCalculator {
+#[derive(PartialEq, Eq)]
+pub struct OsuDifficultyCalculator {
     handle: i32,
 }
+
 impl Drop for OsuDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { OsuDifficultyCalculator_Destroy(self.handle) };
@@ -24,31 +27,34 @@ impl Drop for OsuDifficultyCalculator {
 
 impl DifficultyCalculator for OsuDifficultyCalculator {
     type Attributes = OsuDifficultyAttributes;
-    type NativeAttributes = NativeOsuDifficultyAttributes;
 
-    fn new(ruleset: ruleset::Ruleset, beatmap: beatmap::Beatmap) -> Result<Self, OsuError> {
+    fn new(ruleset: Ruleset, beatmap: Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
-        unsafe {
-            match OsuDifficultyCalculator_Create(
-                ruleset.get_handle(),
-                beatmap.get_handle(),
-                &raw mut handle,
-            ) {
-                ErrorCode::Success => Ok(Self { handle }),
-                e => Err(error_code_to_osu(e)),
-            }
+
+        let code = unsafe {
+            OsuDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
+        };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
         }
+
+        Ok(Self { handle })
     }
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mut attributes: MaybeUninit<Self::NativeAttributes> = MaybeUninit::uninit();
-        let attributes = unsafe {
-            match OsuDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) {
-                ErrorCode::Success => Ok(attributes.assume_init().into()),
-                e => Err(error_code_to_osu(e)),
-            }
-        };
-        attributes
+        let mut attributes: MaybeUninit<NativeType<Self::Attributes>> = MaybeUninit::uninit();
+
+        let code =
+            unsafe { OsuDifficultyCalculator_Calculate(self.handle, attributes.as_mut_ptr()) };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        let native = unsafe { attributes.assume_init() };
+
+        Ok(native.into())
     }
 }
 
@@ -67,6 +73,10 @@ pub struct OsuDifficultyAttributes {
     pub hit_circle_count: i32,
     pub slider_count: i32,
     pub spinner_count: i32,
+}
+
+impl HasNative for OsuDifficultyAttributes {
+    type Native = NativeOsuDifficultyAttributes;
 }
 
 impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
@@ -92,18 +102,18 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
 
 #[cfg(test)]
 mod tests {
-    use super::{OsuDifficultyAttributes, OsuDifficultyCalculator};
+    use super::OsuDifficultyCalculator;
     use crate::{
         beatmap::Beatmap,
         calculator::DifficultyCalculator,
-        ruleset::{Ruleset, Rulesets},
+        ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
-    fn test_toy_box_standard() -> () {
-        let beatmap = Beatmap::new_from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new_from_variant(Rulesets::Standard).unwrap();
+    fn test_toy_box_standard() {
+        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
         let calculator = OsuDifficultyCalculator::new(ruleset, beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_eq!(attributes.star_rating, 5.249653517949988);

@@ -1,18 +1,14 @@
-use crate::{
-    beatmap::Beatmap,
-    error::{NativeError, OsuError},
-    ruleset::Ruleset,
-};
+use crate::{beatmap::Beatmap, error::OsuError, ruleset::Ruleset, utils::HasNative};
+
 pub mod catch;
 pub mod mania;
 pub mod osu;
 pub mod taiko;
 
-trait DifficultyCalculator {
-    type Attributes;
-    type NativeAttributes;
-    fn new(ruleset: Ruleset, beatmap: Beatmap) -> Result<Self, OsuError>
-    where
-        Self: Sized;
+pub trait DifficultyCalculator: Sized {
+    type Attributes: HasNative;
+
+    fn new(ruleset: Ruleset, beatmap: Beatmap) -> Result<Self, OsuError>;
+
     fn calculate(&self) -> Result<Self::Attributes, OsuError>;
 }
