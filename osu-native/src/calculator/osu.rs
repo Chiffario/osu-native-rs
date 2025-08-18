@@ -143,10 +143,15 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use rosu_mods::{Acronym, GameModSimple};
+
     use super::OsuDifficultyCalculator;
     use crate::{
         beatmap::Beatmap,
         calculator::DifficultyCalculator,
+        mods::native::{Mod, ModCollection},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
@@ -170,5 +175,27 @@ mod tests {
         assert_ne!(attributes.hit_circle_count, 0);
         assert_ne!(attributes.slider_count, 0);
         assert_ne!(attributes.spinner_count, 0);
+    }
+
+    #[test]
+    fn test_toy_box_osu_with_mods() {
+        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
+        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let attributes = calculator.calculate().unwrap();
+
+        let mods: GameModSimple = GameModSimple {
+            acronym: Acronym::from_str("DT").unwrap(),
+            settings: Default::default(),
+        };
+        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
+        let calculator_with_mods = OsuDifficultyCalculator::new(ruleset, &beatmap)
+            .unwrap()
+            .mods(vec![mods])
+            .unwrap();
+        let attributes_with_mods = calculator_with_mods.calculate().unwrap();
+
+        assert!(attributes_with_mods.star_rating > attributes.star_rating);
+        assert!(attributes_with_mods.max_combo == attributes.max_combo);
     }
 }
