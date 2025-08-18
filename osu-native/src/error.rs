@@ -22,6 +22,7 @@ impl From<ErrorCode> for NativeError {
         match code {
             ErrorCode::ObjectNotFound => Self::ObjectNotFound,
             ErrorCode::RulesetUnavailable => Self::RulesetUnavailable,
+            ErrorCode::UnexpectedRuleset => Self::UnexpectedRuleset,
             ErrorCode::BeatmapFileNotFound => Self::BeatmapFileNotFound,
             _ => Self::UnknownError(code),
         }
