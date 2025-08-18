@@ -34,7 +34,8 @@ impl Drop for ManiaDifficultyCalculator {
 impl DifficultyCalculator for ManiaDifficultyCalculator {
     type Attributes = ManiaDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
+    fn new(beatmap: &Beatmap) -> Result<Self, OsuError> {
+        let ruleset = Ruleset::new(crate::ruleset::RulesetKind::Mania)?;
         let mut handle = 0;
 
         let code = unsafe {
@@ -125,15 +126,13 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         calculator::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
-        ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
     fn test_toy_box_convert_mania() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Mania).unwrap();
-        let calculator = ManiaDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = ManiaDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 1463);
@@ -141,15 +140,13 @@ mod tests {
     #[test]
     fn test_toy_box_mania_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Mania).unwrap();
-        let calculator = ManiaDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = ManiaDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Mania).unwrap();
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let calculator_with_mods = ManiaDifficultyCalculator::new(ruleset, &beatmap)
+        let calculator_with_mods = ManiaDifficultyCalculator::new(&beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();

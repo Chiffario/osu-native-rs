@@ -34,7 +34,8 @@ impl Drop for CatchDifficultyCalculator {
 impl DifficultyCalculator for CatchDifficultyCalculator {
     type Attributes = CatchDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
+    fn new(beatmap: &Beatmap) -> Result<Self, OsuError> {
+        let ruleset = Ruleset::new(crate::ruleset::RulesetKind::Catch)?;
         let mut handle = 0;
 
         let code = unsafe {
@@ -125,15 +126,13 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         calculator::{DifficultyCalculator, catch::CatchDifficultyCalculator},
-        ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
     fn test_toy_box_convert_catch() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = CatchDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 717);
@@ -141,16 +140,14 @@ mod tests {
     #[test]
     fn test_toy_box_catch_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = CatchDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator_with_mods = CatchDifficultyCalculator::new(ruleset, &beatmap)
+        let calculator_with_mods = CatchDifficultyCalculator::new(&beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();

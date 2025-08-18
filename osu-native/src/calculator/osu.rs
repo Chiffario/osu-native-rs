@@ -34,7 +34,8 @@ impl Drop for OsuDifficultyCalculator {
 impl DifficultyCalculator for OsuDifficultyCalculator {
     type Attributes = OsuDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
+    fn new(beatmap: &Beatmap) -> Result<Self, OsuError> {
+        let ruleset = Ruleset::new(crate::ruleset::RulesetKind::Osu)?;
         let mut handle = 0;
 
         let code = unsafe {
@@ -148,19 +149,12 @@ mod tests {
     use rosu_mods::{Acronym, GameModSimple};
 
     use super::OsuDifficultyCalculator;
-    use crate::{
-        beatmap::Beatmap,
-        calculator::DifficultyCalculator,
-        mods::native::{Mod, ModCollection},
-        ruleset::{Ruleset, RulesetKind},
-        utils::initialize_path,
-    };
+    use crate::{beatmap::Beatmap, calculator::DifficultyCalculator, utils::initialize_path};
 
     #[test]
     fn test_toy_box_osu() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = OsuDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 719);
@@ -180,16 +174,14 @@ mod tests {
     #[test]
     fn test_toy_box_osu_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = OsuDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator_with_mods = OsuDifficultyCalculator::new(ruleset, &beatmap)
+        let calculator_with_mods = OsuDifficultyCalculator::new(&beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();

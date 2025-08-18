@@ -29,7 +29,7 @@ impl From<RulesetKind> for i32 {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, PartialEq)]
 #[error("Invalid ruleset ID {0}")]
 pub struct InvalidRulesetId(i32);
 
@@ -47,7 +47,7 @@ impl TryFrom<i32> for RulesetKind {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, PartialEq)]
 pub enum RulesetError {
     #[error(transparent)]
     InvalidRuleset(#[from] InvalidRulesetId),

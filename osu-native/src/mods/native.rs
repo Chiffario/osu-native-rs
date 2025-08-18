@@ -57,7 +57,7 @@ pub(crate) struct Mod {
     pub handle: NativeModHandle,
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, PartialEq)]
 pub enum ModError {
     #[error("Native error")]
     Native(#[from] NativeError),

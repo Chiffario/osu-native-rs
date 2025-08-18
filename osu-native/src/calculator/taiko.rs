@@ -18,7 +18,7 @@ use crate::{
 
 use super::DifficultyCalculator;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct TaikoDifficultyCalculator {
     handle: i32,
     ruleset: Ruleset,
@@ -34,7 +34,8 @@ impl Drop for TaikoDifficultyCalculator {
 impl DifficultyCalculator for TaikoDifficultyCalculator {
     type Attributes = TaikoDifficultyAttributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
+    fn new(beatmap: &Beatmap) -> Result<Self, OsuError> {
+        let ruleset = Ruleset::new(crate::ruleset::RulesetKind::Taiko)?;
         let mut handle = 0;
 
         let code = unsafe {
@@ -141,40 +142,29 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         calculator::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
-        ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
     fn test_toy_box_convert_taiko() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = TaikoDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 709);
-        // assert_eq!(attributes.rhythm_difficulty, 0.6085760732532105);
-        // assert_eq!(attributes.reading_difficulty, 0.0);
-        // assert_eq!(attributes.colour_difficulty, 0.0);
-        // assert_eq!(attributes.stamina_difficulty, 0.0);
         assert_ne!(attributes.mono_stamina_factor, 0.0);
-        // assert_eq!(attributes.rhythm_top_strains, 0.0);
-        // assert_eq!(attributes.colour_top_strains, 0.0);
-        // assert_eq!(attributes.stamina_top_strains, 0.0);
     }
     #[test]
     fn test_toy_box_taiko_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator = TaikoDifficultyCalculator::new(&beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator_with_mods = TaikoDifficultyCalculator::new(ruleset, &beatmap)
+        let calculator_with_mods = TaikoDifficultyCalculator::new(&beatmap)
             .unwrap()
             .mods(vec![mods])
             .unwrap();
