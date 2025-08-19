@@ -198,4 +198,13 @@ mod tests {
         assert!(attributes_with_mods.star_rating > attributes.star_rating);
         assert!(attributes_with_mods.max_combo == attributes.max_combo);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_calculator_ruleset_mismatch() {
+        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
+        // Panics because of ruleset and calculator don't match
+        let _ = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+    }
 }
