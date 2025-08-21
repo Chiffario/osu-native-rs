@@ -16,7 +16,7 @@ pub trait DifficultyCalculator: Sized {
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError>;
 
-    fn mods(self, mods: impl IntoGameMods) -> Result<Self, GameModsError>;
+    fn with_mods(self, mods: impl IntoGameMods) -> Result<Self, GameModsError>;
 
     fn calculate(&self) -> Result<Self::Attributes, OsuError>;
 }

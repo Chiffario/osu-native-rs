@@ -8,10 +8,10 @@ use libosu_native_sys::{
     ErrorCode, Mod_Create, Mod_Destroy, Mod_SetSetting, ModsCollection_Add, ModsCollection_Create,
     ModsCollection_Destroy, NativeModCollectionHandle, NativeModHandle,
 };
-use rosu_mods::simple::SettingSimple;
+use rosu_mods::{GameMod, GameModSimple, simple::SettingSimple};
 use thiserror::Error as ThisError;
 
-use crate::error::NativeError;
+use crate::error::{NativeError, OsuError};
 
 pub(crate) struct ModCollection {
     pub handle: NativeModCollectionHandle,
@@ -34,6 +34,23 @@ impl ModCollection {
         let handle = unsafe { collection.assume_init() };
 
         Ok(Self { handle })
+    }
+
+    pub fn with_game_mods(self, gamemods: Vec<GameModSimple>) -> Result<Self, OsuError> {
+        let mods = gamemods
+            .iter()
+            .map(|gamemod| {
+                let m = Mod::new(gamemod.acronym.as_str())?;
+                m.apply_settings(&gamemod.settings)?;
+
+                Ok(m)
+            })
+            .collect::<Result<Vec<_>, OsuError>>()?;
+
+        for gamemod in mods.iter() {
+            self.add(gamemod)?;
+        }
+        Ok(self)
     }
 
     pub fn add(&self, gamemod: &Mod) -> Result<(), NativeError> {

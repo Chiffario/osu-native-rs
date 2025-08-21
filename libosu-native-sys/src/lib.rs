@@ -75,6 +75,10 @@ pub type NativeOsuDifficultyCalculatorHandle = i32;
 pub type NativeTaikoDifficultyCalculatorHandle = i32;
 pub type NativeManiaDifficultyCalculatorHandle = i32;
 pub type NativeCatchDifficultyCalculatorHandle = i32;
+pub type NativeOsuPerformanceCalculatorHandle = i32;
+pub type NativeTaikoPerformanceCalculatorHandle = i32;
+pub type NativeManiaPerformanceCalculatorHandle = i32;
+pub type NativeCatchPerformanceCalculatorHandle = i32;
 #[repr(C)]
 pub struct NativeRuleset {
     pub handle: NativeRulesetHandle,
@@ -90,6 +94,32 @@ pub struct NativeBeatmap {
     pub slider_multiplier: f64,
     pub slider_tick_rate: f64,
 }
+
+#[repr(C)]
+pub struct NativeScore {
+    pub mods_handle: NativeModCollectionHandle,
+    pub max_combo: i32,
+    pub accuracy: f64,
+    pub count_miss: i32,
+    pub count_meh: i32,
+    pub count_ok: i32,
+    pub count_good: i32,
+    pub count_great: i32,
+    pub count_perfect: i32,
+    pub count_slider_tail_hit: i32,
+    pub count_large_tick_miss: i32,
+}
+
+#[repr(C)]
+pub struct NativeOsuPerformanceAttributes {
+    pub total: f64,
+    pub aim: f64,
+    pub speed: f64,
+    pub accuracy: f64,
+    pub flashlight: f64,
+    pub effective_miss_count: f64,
+}
+
 #[cfg_attr(target_os = "windows", link(name = "osu.Native", kind = "dylib"))]
 #[cfg_attr(
     not(target_os = "windows"),
@@ -222,4 +252,19 @@ unsafe extern "C" {
         calculator_handle: NativeCatchDifficultyCalculatorHandle,
     );
 
+    /// Performance Calculator Objects (PCO)
+    // OPCO
+    pub fn OsuPerformanceCalculator_Create(
+        calculator_ptr: *mut NativeOsuPerformanceCalculatorHandle,
+    ) -> ErrorCode;
+    pub fn OsuPerformanceCalculator_Calculate(
+        calculator_handle: NativeOsuPerformanceCalculatorHandle,
+        ruleset: NativeRulesetHandle,
+        score: NativeScore,
+        difficulty_attributes: NativeOsuDifficultyAttributes,
+        attributes_ptr: *mut NativeOsuPerformanceAttributes,
+    ) -> ErrorCode;
+    pub fn OsuPerformanceCalculator_Destroy(
+        calculator_handle: NativeOsuPerformanceCalculatorHandle,
+    );
 }
