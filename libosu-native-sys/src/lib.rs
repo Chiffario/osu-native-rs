@@ -120,6 +120,25 @@ pub struct NativeOsuPerformanceAttributes {
     pub effective_miss_count: f64,
 }
 
+#[repr(C)]
+pub struct NativeTaikoPerformanceAttributes {
+    pub total: f64,
+    pub difficulty: f64,
+    pub accuracy: f64,
+    pub effective_miss_count: f64,
+}
+
+#[repr(C)]
+pub struct NativeManiaPerformanceAttributes {
+    pub total: f64,
+    pub difficulty: f64,
+}
+
+#[repr(C)]
+pub struct NativeCatchPerformanceAttributes {
+    pub total: f64,
+}
+
 #[cfg_attr(target_os = "windows", link(name = "osu.Native", kind = "dylib"))]
 #[cfg_attr(
     not(target_os = "windows"),
@@ -266,5 +285,47 @@ unsafe extern "C" {
     ) -> ErrorCode;
     pub fn OsuPerformanceCalculator_Destroy(
         calculator_handle: NativeOsuPerformanceCalculatorHandle,
+    );
+    // TPCO
+    pub fn TaikoPerformanceCalculator_Create(
+        calculator_ptr: *mut NativeTaikoPerformanceCalculatorHandle,
+    ) -> ErrorCode;
+    pub fn TaikoPerformanceCalculator_Calculate(
+        calculator_handle: NativeTaikoPerformanceCalculatorHandle,
+        ruleset: NativeRulesetHandle,
+        score: NativeScore,
+        difficulty_attributes: NativeTaikoDifficultyAttributes,
+        attributes_ptr: *mut NativeTaikoPerformanceAttributes,
+    ) -> ErrorCode;
+    pub fn TaikoPerformanceCalculator_Destroy(
+        calculator_handle: NativeTaikoPerformanceCalculatorHandle,
+    );
+    // MPCO
+    pub fn ManiaPerformanceCalculator_Create(
+        calculator_ptr: *mut NativeManiaPerformanceCalculatorHandle,
+    ) -> ErrorCode;
+    pub fn ManiaPerformanceCalculator_Calculate(
+        calculator_handle: NativeManiaPerformanceCalculatorHandle,
+        ruleset: NativeRulesetHandle,
+        score: NativeScore,
+        difficulty_attributes: NativeManiaDifficultyAttributes,
+        attributes_ptr: *mut NativeManiaPerformanceAttributes,
+    ) -> ErrorCode;
+    pub fn ManiaPerformanceCalculator_Destroy(
+        calculator_handle: NativeManiaPerformanceCalculatorHandle,
+    );
+    // CPCO
+    pub fn CatchPerformanceCalculator_Create(
+        calculator_ptr: *mut NativeCatchPerformanceCalculatorHandle,
+    ) -> ErrorCode;
+    pub fn CatchPerformanceCalculator_Calculate(
+        calculator_handle: NativeCatchPerformanceCalculatorHandle,
+        ruleset: NativeRulesetHandle,
+        score: NativeScore,
+        difficulty_attributes: NativeCatchDifficultyAttributes,
+        attributes_ptr: *mut NativeCatchPerformanceAttributes,
+    ) -> ErrorCode;
+    pub fn CatchPerformanceCalculator_Destroy(
+        calculator_handle: NativeCatchPerformanceCalculatorHandle,
     );
 }
