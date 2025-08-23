@@ -8,12 +8,8 @@ use thiserror::Error as ThisError;
 
 use crate::error::NativeError;
 
-/// Convenience alias for the native type of `T`.
-pub type NativeType<T> = <T as HasNative>::Native;
-
-pub trait HasNative {
-    type Native;
-}
+#[macro_use]
+pub mod macros;
 
 #[derive(Debug, ThisError)]
 pub enum StringError {
@@ -33,33 +29,43 @@ impl From<ErrorCode> for StringError {
     }
 }
 
-pub(crate) fn read_native_string(
-    handle: i32,
-    func: unsafe extern "C" fn(i32, *mut u8, *mut i32) -> ErrorCode,
-) -> Result<String, StringError> {
+type StringFn<H> = unsafe extern "C" fn(H, *mut u8, *mut i32) -> ErrorCode;
+
+pub(crate) fn read_native_string<H>(handle: H, func: StringFn<H>) -> Result<String, StringError>
+where
+    H: Copy,
+{
+    fn new_buffer(code: ErrorCode, size: i32) -> Result<Vec<u8>, StringError> {
+        if code != ErrorCode::BufferSizeQuery {
+            return Err(code.into());
+        }
+
+        let len = size
+            .try_into()
+            .map_err(|_| StringError::InvalidLength(size))?;
+
+        Ok(vec![0u8; len])
+    }
+
+    fn into_result(code: ErrorCode, buffer: Vec<u8>) -> Result<String, StringError> {
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        CString::from_vec_with_nul(buffer)?
+            .into_string()
+            .map_err(Into::into)
+    }
+
     let mut size = 0i32;
 
     let code = unsafe { func(handle, ptr::null_mut(), &mut size) };
 
-    if code != ErrorCode::BufferSizeQuery {
-        return Err(code.into());
-    }
-
-    let len = size
-        .try_into()
-        .map_err(|_| StringError::InvalidLength(size))?;
-
-    let mut buffer = vec![0u8; len];
+    let mut buffer = new_buffer(code, size)?;
 
     let code = unsafe { func(handle, buffer.as_mut_ptr(), &mut size) };
 
-    if code != ErrorCode::Success {
-        return Err(code.into());
-    }
-
-    CString::from_vec_with_nul(buffer)?
-        .into_string()
-        .map_err(Into::into)
+    into_result(code, buffer)
 }
 
 #[cfg(test)]

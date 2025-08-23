@@ -1,9 +1,9 @@
 use crate::{
     beatmap::Beatmap,
-    error::OsuError,
+    error::{NativeError, OsuError},
     mods::{GameModsError, IntoGameMods},
     ruleset::Ruleset,
-    utils::HasNative,
+    traits::NativeWrapper,
 };
 
 pub mod catch;
@@ -11,10 +11,10 @@ pub mod mania;
 pub mod osu;
 pub mod taiko;
 
-pub trait DifficultyCalculator: Sized {
-    type Attributes: HasNative;
+pub trait DifficultyCalculator: Sized + NativeWrapper {
+    type Attributes;
 
-    fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError>;
+    fn create(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, NativeError>;
 
     fn mods(self, mods: impl IntoGameMods) -> Result<Self, GameModsError>;
 
