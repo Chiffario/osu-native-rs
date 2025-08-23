@@ -6,18 +6,12 @@ use libosu_native_sys::{
     NativeCatchDifficultyCalculator, NativeCatchDifficultyCalculatorHandle,
 };
 
-use crate::{
-    calculator::CreateFn,
-    error::OsuError,
-    mods::{
-        GameMods, GameModsError, IntoGameMods,
-        native::{Mod, ModCollection},
-    },
-    ruleset::Ruleset,
-    traits::Native,
-};
+use crate::{mods::GameMods, ruleset::Ruleset, traits::Native};
 
-use super::DifficultyCalculator;
+impl_native!(
+    NativeCatchDifficultyCalculator:
+        NativeCatchDifficultyCalculatorHandle, CatchDifficultyCalculator_Destroy
+);
 
 declare_native_wrapper! {
     #[derive(Debug, PartialEq)]
@@ -28,70 +22,18 @@ declare_native_wrapper! {
     }
 }
 
-impl From<(NativeCatchDifficultyCalculator, Ruleset)> for CatchDifficultyCalculator {
-    fn from((native, ruleset): (NativeCatchDifficultyCalculator, Ruleset)) -> Self {
-        Self {
-            native,
-            ruleset,
-            mods: GameMods::default(),
-        }
+impl_calculator! {
+    CatchDifficultyCalculator {
+        attributes: CatchDifficultyAttributes,
+        handle: NativeCatchDifficultyCalculatorHandle,
+        create: CatchDifficultyCalculator_Create,
+        calculate: CatchDifficultyCalculator_CalculateMods,
     }
 }
 
-impl_native!(
-    NativeCatchDifficultyCalculator:
-        NativeCatchDifficultyCalculatorHandle, CatchDifficultyCalculator_Destroy
-);
-
-impl DifficultyCalculator for CatchDifficultyCalculator {
-    type Attributes = CatchDifficultyAttributes;
-
-    const CREATE: CreateFn<Self::Native> = CatchDifficultyCalculator_Create;
-
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
-        self.mods = mods.into_mods()?;
-
-        Ok(self)
-    }
-
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mods = ModCollection::new()?;
-
-        let mods_vec = self
-            .mods
-            .0
-            .iter()
-            .map(|gamemod| {
-                let m = Mod::new(gamemod.acronym.as_str())?;
-                m.apply_settings(&gamemod.settings)?;
-
-                Ok(m)
-            })
-            .collect::<Result<Vec<_>, OsuError>>()?;
-
-        for gamemod in mods_vec.iter() {
-            mods.add(gamemod)?;
-        }
-
-        let mut attributes = MaybeUninit::uninit();
-
-        let code = unsafe {
-            CatchDifficultyCalculator_CalculateMods(
-                self.handle(),
-                self.ruleset.handle(),
-                mods.handle(),
-                attributes.as_mut_ptr(),
-            )
-        };
-
-        if code != ErrorCode::Success {
-            return Err(code.into());
-        }
-
-        let native = unsafe { attributes.assume_init() };
-
-        Ok(native.into())
-    }
+pub struct CatchDifficultyAttributes {
+    pub star_rating: f64,
+    pub max_combo: usize,
 }
 
 impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
@@ -101,11 +43,6 @@ impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
             max_combo: value.max_combo as usize,
         }
     }
-}
-
-pub struct CatchDifficultyAttributes {
-    pub star_rating: f64,
-    pub max_combo: usize,
 }
 
 #[cfg(test)]
@@ -130,6 +67,7 @@ mod tests {
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 717);
     }
+
     #[test]
     fn test_toy_box_catch_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();

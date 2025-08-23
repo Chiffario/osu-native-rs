@@ -12,12 +12,12 @@ use crate::{
     utils::{StringError, read_native_string},
 };
 
+impl_native!(NativeBeatmap: NativeBeatmapHandle, Beatmap_Destroy);
+
 declare_native_wrapper! {
     #[derive(Debug, PartialEq)]
     pub struct Beatmap(NativeBeatmap);
 }
-
-impl_native!(NativeBeatmap: NativeBeatmapHandle, Beatmap_Destroy);
 
 #[derive(Debug, ThisError)]
 pub enum BeatmapError {

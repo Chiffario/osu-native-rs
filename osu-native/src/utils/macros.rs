@@ -1,5 +1,5 @@
-/// Implements [`NativeWrapper`], [`Deref`], [`From<Native>`] and [`Drop`] for
-/// native wrappers.
+/// Implements [`NativeWrapper`], [`Deref`], [`From<Native>`] (only for simple
+/// tuple wrappers) and [`Drop`] for native wrappers.
 ///
 /// [`NativeWrapper`]: crate::traits::NativeWrapper
 /// [`Deref`]: std::ops::Deref
@@ -22,8 +22,8 @@ macro_rules! declare_native_wrapper {
             }
         }
 
-        impl From<($native, crate::ruleset::Ruleset)> for $name {
-            fn from((native, _): ($native, crate::ruleset::Ruleset)) -> Self {
+        impl From<$native> for $name {
+            fn from(native: $native) -> Self {
                 Self(native)
             }
         }
@@ -123,6 +123,94 @@ macro_rules! impl_native {
 
             fn handle(&self) -> Self::Handle {
                 self.handle
+            }
+        }
+    };
+}
+
+/// Implements [`DifficultyCalculator`].
+///
+/// [`DifficultyCalculator`]: crate::calculator::DifficultyCalculator
+macro_rules! impl_calculator {
+    (
+        $name:ident {
+            attributes: $attrs:ty,
+            handle: $handle:ident,
+            create: $create:ident,
+            calculate: $calc:ident,
+        }
+    ) => {
+        impl crate::calculator::DifficultyCalculator for $name {
+            type Attributes = $attrs;
+
+            fn create(
+                ruleset: crate::ruleset::Ruleset,
+                beatmap: &crate::beatmap::Beatmap,
+            ) -> Result<Self, crate::error::NativeError> {
+                let mut calculator = MaybeUninit::uninit();
+
+                let code =
+                    unsafe { $create(ruleset.handle(), beatmap.handle(), calculator.as_mut_ptr()) };
+
+                if code != ErrorCode::Success {
+                    return Err(code.into());
+                }
+
+                let native = unsafe { calculator.assume_init() };
+
+                Ok(Self {
+                    native,
+                    ruleset,
+                    mods: crate::mods::GameMods::default(),
+                })
+            }
+
+            fn mods(
+                mut self,
+                mods: impl crate::mods::IntoGameMods,
+            ) -> Result<Self, crate::mods::GameModsError> {
+                self.mods = crate::mods::IntoGameMods::into_mods(mods)?;
+
+                Ok(self)
+            }
+
+            fn calculate(&self) -> Result<Self::Attributes, crate::error::OsuError> {
+                let mods = crate::mods::native::ModCollection::new()?;
+
+                let mods_vec = self
+                    .mods
+                    .0
+                    .iter()
+                    .map(|gamemod| {
+                        let m = crate::mods::native::Mod::new(gamemod.acronym.as_str())?;
+                        m.apply_settings(&gamemod.settings)?;
+
+                        Ok(m)
+                    })
+                    .collect::<Result<Vec<_>, crate::error::OsuError>>()?;
+
+                for gamemod in mods_vec.iter() {
+                    mods.add(gamemod)?;
+                }
+
+                let mut attributes = std::mem::MaybeUninit::uninit();
+
+                let code = unsafe {
+                    $calc(
+                        self.handle(),
+                        self.ruleset.handle(),
+                        mods.handle(),
+                        attributes.as_mut_ptr(),
+                    )
+                };
+
+                if code != ::libosu_native_sys::ErrorCode::Success {
+                    return Err(code.into());
+                }
+
+                let native = unsafe { attributes.assume_init() };
+
+                Ok(native.into())
             }
         }
     };

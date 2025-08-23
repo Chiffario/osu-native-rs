@@ -51,12 +51,12 @@ impl TryFrom<i32> for RulesetKind {
     }
 }
 
+impl_native!(NativeRuleset: NativeRulesetHandle, Ruleset_Destroy);
+
 declare_native_wrapper! {
     #[derive(Debug, PartialEq, Eq)]
     pub struct Ruleset(NativeRuleset);
 }
-
-impl_native!(NativeRuleset: NativeRulesetHandle, Ruleset_Destroy);
 
 impl Ruleset {
     pub fn from_kind(kind: RulesetKind) -> Result<Self, NativeError> {

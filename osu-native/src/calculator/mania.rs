@@ -6,18 +6,12 @@ use libosu_native_sys::{
     NativeManiaDifficultyCalculator, NativeManiaDifficultyCalculatorHandle,
 };
 
-use crate::{
-    calculator::CreateFn,
-    error::OsuError,
-    mods::{
-        GameMods, GameModsError, IntoGameMods,
-        native::{Mod, ModCollection},
-    },
-    ruleset::Ruleset,
-    traits::Native,
-};
+use crate::{mods::GameMods, ruleset::Ruleset, traits::Native};
 
-use super::DifficultyCalculator;
+impl_native!(
+    NativeManiaDifficultyCalculator:
+        NativeManiaDifficultyCalculatorHandle, ManiaDifficultyCalculator_Destroy
+);
 
 declare_native_wrapper! {
     #[derive(Debug, PartialEq)]
@@ -28,70 +22,18 @@ declare_native_wrapper! {
     }
 }
 
-impl From<(NativeManiaDifficultyCalculator, Ruleset)> for ManiaDifficultyCalculator {
-    fn from((native, ruleset): (NativeManiaDifficultyCalculator, Ruleset)) -> Self {
-        Self {
-            native,
-            ruleset,
-            mods: GameMods::default(),
-        }
+impl_calculator! {
+    ManiaDifficultyCalculator {
+        attributes: ManiaDifficultyAttributes,
+        handle: NativeManiaDifficultyCalculatorHandle,
+        create: ManiaDifficultyCalculator_Create,
+        calculate: ManiaDifficultyCalculator_CalculateMods,
     }
 }
 
-impl_native!(
-    NativeManiaDifficultyCalculator:
-        NativeManiaDifficultyCalculatorHandle, ManiaDifficultyCalculator_Destroy
-);
-
-impl DifficultyCalculator for ManiaDifficultyCalculator {
-    type Attributes = ManiaDifficultyAttributes;
-
-    const CREATE: CreateFn<Self::Native> = ManiaDifficultyCalculator_Create;
-
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
-        self.mods = mods.into_mods()?;
-
-        Ok(self)
-    }
-
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mods = ModCollection::new()?;
-
-        let mods_vec = self
-            .mods
-            .0
-            .iter()
-            .map(|gamemod| {
-                let m = Mod::new(gamemod.acronym.as_str())?;
-                m.apply_settings(&gamemod.settings)?;
-
-                Ok(m)
-            })
-            .collect::<Result<Vec<_>, OsuError>>()?;
-
-        for gamemod in mods_vec.iter() {
-            mods.add(gamemod)?;
-        }
-
-        let mut attributes = MaybeUninit::uninit();
-
-        let code = unsafe {
-            ManiaDifficultyCalculator_CalculateMods(
-                self.handle(),
-                self.ruleset.handle(),
-                mods.handle(),
-                attributes.as_mut_ptr(),
-            )
-        };
-
-        if code != ErrorCode::Success {
-            return Err(code.into());
-        }
-
-        let native = unsafe { attributes.assume_init() };
-
-        Ok(native.into())
-    }
+pub struct ManiaDifficultyAttributes {
+    pub star_rating: f64,
+    pub max_combo: usize,
 }
 
 impl From<NativeManiaDifficultyAttributes> for ManiaDifficultyAttributes {
@@ -101,11 +43,6 @@ impl From<NativeManiaDifficultyAttributes> for ManiaDifficultyAttributes {
             max_combo: value.max_combo as usize,
         }
     }
-}
-
-pub struct ManiaDifficultyAttributes {
-    pub star_rating: f64,
-    pub max_combo: usize,
 }
 
 #[cfg(test)]
@@ -130,6 +67,7 @@ mod tests {
         assert_ne!(attributes.star_rating, 0.0);
         assert_eq!(attributes.max_combo, 1463);
     }
+
     #[test]
     fn test_toy_box_mania_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();

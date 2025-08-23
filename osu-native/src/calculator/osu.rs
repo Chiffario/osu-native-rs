@@ -6,18 +6,12 @@ use libosu_native_sys::{
     OsuDifficultyCalculator_Create, OsuDifficultyCalculator_Destroy,
 };
 
-use crate::{
-    calculator::CreateFn,
-    error::OsuError,
-    mods::{
-        GameMods, GameModsError, IntoGameMods,
-        native::{Mod, ModCollection},
-    },
-    ruleset::Ruleset,
-    traits::Native,
-};
+use crate::{mods::GameMods, ruleset::Ruleset, traits::Native};
 
-use super::DifficultyCalculator;
+impl_native!(
+    NativeOsuDifficultyCalculator:
+        NativeOsuDifficultyCalculatorHandle, OsuDifficultyCalculator_Destroy
+);
 
 declare_native_wrapper! {
     #[derive(Debug, PartialEq)]
@@ -28,69 +22,12 @@ declare_native_wrapper! {
     }
 }
 
-impl From<(NativeOsuDifficultyCalculator, Ruleset)> for OsuDifficultyCalculator {
-    fn from((native, ruleset): (NativeOsuDifficultyCalculator, Ruleset)) -> Self {
-        Self {
-            native,
-            ruleset,
-            mods: GameMods::default(),
-        }
-    }
-}
-
-impl_native!(
-    NativeOsuDifficultyCalculator:
-        NativeOsuDifficultyCalculatorHandle, OsuDifficultyCalculator_Destroy
-);
-
-impl DifficultyCalculator for OsuDifficultyCalculator {
-    type Attributes = OsuDifficultyAttributes;
-
-    const CREATE: CreateFn<Self::Native> = OsuDifficultyCalculator_Create;
-
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
-        self.mods = mods.into_mods()?;
-
-        Ok(self)
-    }
-
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
-        let mod_collection = ModCollection::new()?;
-
-        let mods = self
-            .mods
-            .0
-            .iter()
-            .map(|gamemod| {
-                let m = Mod::new(gamemod.acronym.as_str())?;
-                m.apply_settings(&gamemod.settings)?;
-
-                Ok(m)
-            })
-            .collect::<Result<Vec<_>, OsuError>>()?;
-
-        for gamemod in mods.iter() {
-            mod_collection.add(gamemod)?;
-        }
-
-        let mut attributes = MaybeUninit::uninit();
-
-        let code = unsafe {
-            OsuDifficultyCalculator_CalculateMods(
-                self.handle,
-                self.ruleset.handle(),
-                mod_collection.handle(),
-                attributes.as_mut_ptr(),
-            )
-        };
-
-        if code != ErrorCode::Success {
-            return Err(code.into());
-        }
-
-        let native = unsafe { attributes.assume_init() };
-
-        Ok(native.into())
+impl_calculator! {
+    OsuDifficultyCalculator {
+        attributes: OsuDifficultyAttributes,
+        handle: NativeOsuDifficultyCalculatorHandle,
+        create: OsuDifficultyCalculator_Create,
+        calculate: OsuDifficultyCalculator_CalculateMods,
     }
 }
 
