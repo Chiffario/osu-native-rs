@@ -17,10 +17,10 @@ trait PerformanceCalculator: Sized {
 
     fn calculate(
         &self,
-        ruleset: Ruleset,
-        score: ScoreStatistics,
-        mods: Vec<GameModSimple>,
-        difficulty_attributes: Self::DifficultyAttributes,
+        ruleset: &Ruleset,
+        score: &ScoreStatistics,
+        mods: impl IntoGameMods,
+        difficulty_attributes: &Self::DifficultyAttributes,
     ) -> Result<Self::Attributes, crate::error::OsuError>;
 }
 

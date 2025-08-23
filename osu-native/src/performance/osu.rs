@@ -7,7 +7,7 @@ use libosu_native_sys::{
 use rosu_mods::GameModSimple;
 
 use crate::{
-    calculator::osu::OsuDifficultyAttributes,
+    difficulty::osu::OsuDifficultyAttributes,
     mods::{IntoGameMods, native::ModCollection},
     performance::{PerformanceCalculator, ScoreStatistics},
     ruleset::Ruleset,
@@ -46,10 +46,10 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
 
     fn calculate(
         &self,
-        ruleset: Ruleset,
-        score: ScoreStatistics,
-        mods: Vec<GameModSimple>,
-        difficulty_attributes: Self::DifficultyAttributes,
+        ruleset: &Ruleset,
+        score: &ScoreStatistics,
+        mods: impl IntoGameMods,
+        difficulty_attributes: &Self::DifficultyAttributes,
     ) -> Result<Self::Attributes, crate::error::OsuError> {
         let mods = ModCollection::new()?.with_game_mods(mods)?;
         let mut attributes = MaybeUninit::uninit();
@@ -86,7 +86,7 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
 
 #[derive(Debug)]
 pub struct OsuPerformanceAttributes {
-    pub stars: f64,
+    pub pp: f64,
     pub aim: f64,
     pub speed: f64,
     pub accuracy: f64,
@@ -101,7 +101,7 @@ impl HasNative for OsuPerformanceAttributes {
 impl From<NativeOsuPerformanceAttributes> for OsuPerformanceAttributes {
     fn from(value: NativeOsuPerformanceAttributes) -> Self {
         Self {
-            stars: value.total,
+            pp: value.total,
             aim: value.aim,
             speed: value.speed,
             accuracy: value.accuracy,
@@ -115,7 +115,7 @@ impl From<NativeOsuPerformanceAttributes> for OsuPerformanceAttributes {
 mod tests {
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, osu::OsuDifficultyCalculator},
+        difficulty::{DifficultyCalculator, osu::OsuDifficultyCalculator},
         mods::native::ModCollection,
         performance::{PerformanceCalculator, ScoreStatistics, osu::OsuPerformanceCalculator},
         ruleset::{Ruleset, RulesetKind},
@@ -129,10 +129,8 @@ mod tests {
         let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
-        println!("Create mods");
         let mods = calculator.mods();
 
-        println!("Create score");
         let score = ScoreStatistics {
             max_combo: attributes.max_combo as i32,
             accuracy: 1.0,
@@ -148,16 +146,64 @@ mod tests {
             count_large_tick_miss: 0,
         };
 
-        println!("Create ruleset");
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        println!("Create perfcalc");
         let perfcalc = OsuPerformanceCalculator::new().unwrap();
-        println!("Create perfatt");
         let attributes = perfcalc
-            .calculate(ruleset, score, mods.0, attributes)
+            .calculate(&ruleset, &score, mods.0, &attributes)
             .unwrap();
         println!("attributes: {attributes:#?}");
 
-        assert_ne!(attributes.stars, 0.0);
+        assert_ne!(attributes.pp, 0.0);
+    }
+
+    #[test]
+    fn test_performance_with_different_accuracy_osu() {
+        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
+        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let difficulty_attributes = calculator.calculate().unwrap();
+
+        let ss = ScoreStatistics {
+            max_combo: difficulty_attributes.max_combo as i32,
+            accuracy: 1.0,
+            count_miss: 0,
+            count_meh: 0,
+            count_ok: 0,
+            count_good: 0,
+            count_great: difficulty_attributes.hit_circle_count
+                + difficulty_attributes.slider_count
+                + difficulty_attributes.spinner_count,
+            count_perfect: 0,
+            count_slider_tail_hit: difficulty_attributes.slider_count,
+            count_large_tick_miss: 0,
+        };
+        let worse = ScoreStatistics {
+            max_combo: difficulty_attributes.max_combo as i32,
+            accuracy: 0.9869,
+            count_miss: 0,
+            count_meh: 0,
+            count_ok: 12,
+            count_good: 0,
+            count_great: difficulty_attributes.hit_circle_count
+                + difficulty_attributes.slider_count
+                + difficulty_attributes.spinner_count
+                - 12,
+            count_perfect: 0,
+            count_slider_tail_hit: difficulty_attributes.slider_count,
+            count_large_tick_miss: 0,
+        };
+
+        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
+        let perfcalc = OsuPerformanceCalculator::new().unwrap();
+        let mods = calculator.mods();
+        let ss_attributes = perfcalc
+            .calculate(&ruleset, &ss, mods.0, &difficulty_attributes)
+            .unwrap();
+        let mods = calculator.mods();
+        let worse_attributes = perfcalc
+            .calculate(&ruleset, &worse, mods.0, &difficulty_attributes)
+            .unwrap();
+
+        assert!(ss_attributes.pp > worse_attributes.pp);
     }
 }

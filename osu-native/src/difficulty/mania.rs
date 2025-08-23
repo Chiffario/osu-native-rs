@@ -124,7 +124,7 @@ mod tests {
 
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
+        difficulty::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };

@@ -8,13 +8,27 @@ use libosu_native_sys::{
     ErrorCode, Mod_Create, Mod_Destroy, Mod_SetSetting, ModsCollection_Add, ModsCollection_Create,
     ModsCollection_Destroy, NativeModCollectionHandle, NativeModHandle,
 };
-use rosu_mods::{GameMod, GameModSimple, simple::SettingSimple};
+use rosu_mods::{GameMod, GameModSimple, error::AcronymParseError, simple::SettingSimple};
 use thiserror::Error as ThisError;
 
-use crate::error::{NativeError, OsuError};
+use crate::{
+    error::{NativeError, OsuError},
+    mods::{GameModsError, IntoGameMods},
+};
 
 pub(crate) struct ModCollection {
     pub handle: NativeModCollectionHandle,
+    mods: Vec<Mod>,
+}
+
+#[derive(Debug, ThisError)]
+pub enum ModCollectionError {
+    #[error("Native error")]
+    Native(#[from] NativeError),
+    #[error("Game mods error")]
+    ModsError(#[from] GameModsError),
+    #[error("Mod error")]
+    Mod(#[from] ModError),
 }
 
 impl ModCollection {
@@ -33,11 +47,19 @@ impl ModCollection {
 
         let handle = unsafe { collection.assume_init() };
 
-        Ok(Self { handle })
+        Ok(Self {
+            handle,
+            mods: vec![],
+        })
     }
 
-    pub fn with_game_mods(self, gamemods: Vec<GameModSimple>) -> Result<Self, OsuError> {
+    pub fn with_game_mods(
+        mut self,
+        gamemods: impl IntoGameMods,
+    ) -> Result<Self, ModCollectionError> {
         let mods = gamemods
+            .into_mods()?
+            .0
             .iter()
             .map(|gamemod| {
                 let m = Mod::new(gamemod.acronym.as_str())?;
@@ -45,10 +67,11 @@ impl ModCollection {
 
                 Ok(m)
             })
-            .collect::<Result<Vec<_>, OsuError>>()?;
+            .collect::<Result<Vec<_>, ModCollectionError>>()?;
 
-        for gamemod in mods.iter() {
-            self.add(gamemod)?;
+        for gamemod in mods.into_iter() {
+            self.add(&gamemod)?;
+            self.mods.push(gamemod);
         }
         Ok(self)
     }

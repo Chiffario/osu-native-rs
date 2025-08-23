@@ -1,8 +1,8 @@
 use std::mem::MaybeUninit;
 
 use libosu_native_sys::{
-    ErrorCode, NativeTaikoDifficultyAttributes, TaikoDifficultyCalculator_CalculateMods,
-    TaikoDifficultyCalculator_Create, TaikoDifficultyCalculator_Destroy,
+    CatchDifficultyCalculator_CalculateMods, CatchDifficultyCalculator_Create,
+    CatchDifficultyCalculator_Destroy, ErrorCode, NativeCatchDifficultyAttributes,
 };
 
 use crate::{
@@ -19,26 +19,26 @@ use crate::{
 use super::DifficultyCalculator;
 
 #[derive(PartialEq)]
-pub struct TaikoDifficultyCalculator {
+pub struct CatchDifficultyCalculator {
     handle: i32,
     ruleset: Ruleset,
     mods: GameMods,
 }
 
-impl Drop for TaikoDifficultyCalculator {
+impl Drop for CatchDifficultyCalculator {
     fn drop(&mut self) {
-        unsafe { TaikoDifficultyCalculator_Destroy(self.handle) };
+        unsafe { CatchDifficultyCalculator_Destroy(self.handle) };
     }
 }
 
-impl DifficultyCalculator for TaikoDifficultyCalculator {
-    type Attributes = TaikoDifficultyAttributes;
+impl DifficultyCalculator for CatchDifficultyCalculator {
+    type Attributes = CatchDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
 
         let code = unsafe {
-            TaikoDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
+            CatchDifficultyCalculator_Create(ruleset.handle(), beatmap.handle(), &mut handle)
         };
 
         if code != ErrorCode::Success {
@@ -80,7 +80,7 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
         let mut attributes = MaybeUninit::uninit();
 
         let code = unsafe {
-            TaikoDifficultyCalculator_CalculateMods(
+            CatchDifficultyCalculator_CalculateMods(
                 self.handle,
                 self.ruleset.handle(),
                 mods.handle(),
@@ -98,38 +98,22 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
     }
 }
 
-pub struct TaikoDifficultyAttributes {
-    pub star_rating: f64,
-    pub max_combo: usize,
-    pub rhythm_difficulty: f64,
-    pub reading_difficulty: f64,
-    pub colour_difficulty: f64,
-    pub stamina_difficulty: f64,
-    pub mono_stamina_factor: f64,
-    pub rhythm_top_strains: f64,
-    pub colour_top_strains: f64,
-    pub stamina_top_strains: f64,
-}
-
-impl HasNative for TaikoDifficultyAttributes {
-    type Native = NativeTaikoDifficultyAttributes;
-}
-
-impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
-    fn from(value: NativeTaikoDifficultyAttributes) -> Self {
+impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
+    fn from(value: NativeCatchDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
             max_combo: value.max_combo as usize,
-            rhythm_difficulty: value.rhythm_difficulty,
-            reading_difficulty: value.reading_difficulty,
-            colour_difficulty: value.colour_difficulty,
-            stamina_difficulty: value.stamina_difficulty,
-            mono_stamina_factor: value.mono_stamina_factor,
-            rhythm_top_strains: value.rhythm_top_strains,
-            colour_top_strains: value.colour_top_strains,
-            stamina_top_strains: value.stamina_top_strains,
         }
     }
+}
+
+pub struct CatchDifficultyAttributes {
+    pub star_rating: f64,
+    pub max_combo: usize,
+}
+
+impl HasNative for CatchDifficultyAttributes {
+    type Native = NativeCatchDifficultyAttributes;
 }
 
 #[cfg(test)]
@@ -140,41 +124,33 @@ mod tests {
 
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
+        difficulty::{DifficultyCalculator, catch::CatchDifficultyCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
-    fn test_toy_box_convert_taiko() {
+    fn test_toy_box_convert_catch() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
+        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
         assert_ne!(attributes.star_rating, 0.0);
-        assert_eq!(attributes.max_combo, 709);
-        // assert_eq!(attributes.rhythm_difficulty, 0.6085760732532105);
-        // assert_eq!(attributes.reading_difficulty, 0.0);
-        // assert_eq!(attributes.colour_difficulty, 0.0);
-        // assert_eq!(attributes.stamina_difficulty, 0.0);
-        assert_ne!(attributes.mono_stamina_factor, 0.0);
-        // assert_eq!(attributes.rhythm_top_strains, 0.0);
-        // assert_eq!(attributes.colour_top_strains, 0.0);
-        // assert_eq!(attributes.stamina_top_strains, 0.0);
+        assert_eq!(attributes.max_combo, 717);
     }
     #[test]
-    fn test_toy_box_taiko_with_mods() {
+    fn test_toy_box_catch_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
+        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
         let attributes = calculator.calculate().unwrap();
 
         let mods: GameModSimple = GameModSimple {
             acronym: Acronym::from_str("DT").unwrap(),
             settings: Default::default(),
         };
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator_with_mods = TaikoDifficultyCalculator::new(ruleset, &beatmap)
+        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
+        let calculator_with_mods = CatchDifficultyCalculator::new(ruleset, &beatmap)
             .unwrap()
             .with_mods(vec![mods])
             .unwrap();

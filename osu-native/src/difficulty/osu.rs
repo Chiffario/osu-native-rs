@@ -147,7 +147,7 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
     }
 }
 
-impl Into<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
+impl Into<NativeOsuDifficultyAttributes> for &OsuDifficultyAttributes {
     fn into(self) -> NativeOsuDifficultyAttributes {
         NativeOsuDifficultyAttributes {
             star_rating: self.star_rating,
@@ -176,7 +176,7 @@ mod tests {
     use super::OsuDifficultyCalculator;
     use crate::{
         beatmap::Beatmap,
-        calculator::DifficultyCalculator,
+        difficulty::DifficultyCalculator,
         mods::native::{Mod, ModCollection},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
