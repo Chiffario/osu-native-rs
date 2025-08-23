@@ -98,13 +98,16 @@ macro_rules! declare_native_wrapper {
         impl Drop for $name {
             fn drop(&mut self) {
                 let code = unsafe {
-                    <<Self as crate::traits::NativeWrapper>::Native as Native>::DESTROY(
-                        self.handle(),
+                    <<Self as crate::traits::NativeWrapper>::Native as crate::traits::Native>::DESTROY(
+                      crate::traits::Native::handle(&**self),
                     )
                 };
 
                 if code != ::libosu_native_sys::ErrorCode::Success {
-                    eprintln!("Failed to destroy object {:?}: {code:?}", self.handle());
+                    eprintln!(
+                        "Failed to destroy object {:?}: {code:?}",
+                        crate::traits::Native::handle(&**self)
+                    );
                 }
             }
         }
@@ -147,12 +150,12 @@ macro_rules! impl_calculator {
                 ruleset: crate::ruleset::Ruleset,
                 beatmap: &crate::beatmap::Beatmap,
             ) -> Result<Self, crate::error::NativeError> {
-                let mut calculator = MaybeUninit::uninit();
+                let mut calculator = std::mem::MaybeUninit::uninit();
 
                 let code =
                     unsafe { $create(ruleset.handle(), beatmap.handle(), calculator.as_mut_ptr()) };
 
-                if code != ErrorCode::Success {
+                if code != ::libosu_native_sys::ErrorCode::Success {
                     return Err(code.into());
                 }
 
@@ -175,7 +178,7 @@ macro_rules! impl_calculator {
             }
 
             fn calculate(&self) -> Result<Self::Attributes, crate::error::OsuError> {
-                let mods = crate::mods::native::ModCollection::new()?;
+                let mods = crate::mods::native::ModsCollection::new()?;
 
                 let mods_vec = self
                     .mods

@@ -1,8 +1,6 @@
-use std::mem::MaybeUninit;
-
 use libosu_native_sys::{
     CatchDifficultyCalculator_CalculateMods, CatchDifficultyCalculator_Create,
-    CatchDifficultyCalculator_Destroy, ErrorCode, NativeCatchDifficultyAttributes,
+    CatchDifficultyCalculator_Destroy, NativeCatchDifficultyAttributes,
     NativeCatchDifficultyCalculator, NativeCatchDifficultyCalculatorHandle,
 };
 

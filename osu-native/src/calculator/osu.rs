@@ -1,7 +1,5 @@
-use std::mem::MaybeUninit;
-
 use libosu_native_sys::{
-    ErrorCode, NativeOsuDifficultyAttributes, NativeOsuDifficultyCalculator,
+    NativeOsuDifficultyAttributes, NativeOsuDifficultyCalculator,
     NativeOsuDifficultyCalculatorHandle, OsuDifficultyCalculator_CalculateMods,
     OsuDifficultyCalculator_Create, OsuDifficultyCalculator_Destroy,
 };

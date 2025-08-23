@@ -1,7 +1,5 @@
-use std::mem::MaybeUninit;
-
 use libosu_native_sys::{
-    ErrorCode, NativeTaikoDifficultyAttributes, NativeTaikoDifficultyCalculator,
+    NativeTaikoDifficultyAttributes, NativeTaikoDifficultyCalculator,
     NativeTaikoDifficultyCalculatorHandle, TaikoDifficultyCalculator_CalculateMods,
     TaikoDifficultyCalculator_Create, TaikoDifficultyCalculator_Destroy,
 };

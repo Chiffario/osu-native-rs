@@ -1,7 +1,5 @@
-use std::mem::MaybeUninit;
-
 use libosu_native_sys::{
-    ErrorCode, ManiaDifficultyCalculator_CalculateMods, ManiaDifficultyCalculator_Create,
+    ManiaDifficultyCalculator_CalculateMods, ManiaDifficultyCalculator_Create,
     ManiaDifficultyCalculator_Destroy, NativeManiaDifficultyAttributes,
     NativeManiaDifficultyCalculator, NativeManiaDifficultyCalculatorHandle,
 };

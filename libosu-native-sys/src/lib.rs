@@ -106,13 +106,25 @@ pub struct NativeManiaDifficultyCalculator {
 #[repr(transparent)]
 pub struct NativeManiaDifficultyCalculatorHandle(i32);
 
+#[derive(Debug, PartialEq, Eq)]
+#[repr(C)]
+pub struct NativeMod {
+    pub handle: NativeModHandle,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct NativeModHandle(i32);
 
+#[derive(Debug, PartialEq, Eq)]
+#[repr(C)]
+pub struct NativeModsCollection {
+    pub handle: NativeModsCollectionHandle,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct NativeModCollectionHandle(i32);
+pub struct NativeModsCollectionHandle(i32);
 
 #[derive(Debug, PartialEq, Eq)]
 #[repr(C)]
@@ -148,22 +160,22 @@ pub struct NativeBeatmapHandle(i32);
 )]
 unsafe extern "C" {
     // Mod
-    pub fn Mod_Create(acronym: *const i8, mod_handle_ptr: *mut NativeModHandle) -> ErrorCode;
+    pub fn Mod_Create(acronym: *const i8, mod_handle_ptr: *mut NativeMod) -> ErrorCode;
     pub fn Mod_SetSetting(mod_handle: NativeModHandle, key: *const i8, value: f64) -> ErrorCode;
     pub fn Mod_Debug(mod_handle: NativeModHandle) -> ErrorCode;
     pub fn Mod_Destroy(mod_handle: NativeModHandle) -> ErrorCode;
 
     // Mod collection
-    pub fn ModsCollection_Create(mod_collection_ptr: *mut NativeModCollectionHandle) -> ErrorCode;
+    pub fn ModsCollection_Create(mod_collection_ptr: *mut NativeModsCollection) -> ErrorCode;
     pub fn ModsCollection_Add(
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         mod_handle: NativeModHandle,
     ) -> ErrorCode;
     pub fn ModsCollection_Remove(
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         mod_handle: NativeModHandle,
     ) -> ErrorCode;
-    pub fn ModsCollection_Destroy(mod_collection_handle: NativeModCollectionHandle) -> ErrorCode;
+    pub fn ModsCollection_Destroy(mod_collection_handle: NativeModsCollectionHandle) -> ErrorCode;
 
     // Rulesets
     pub fn Ruleset_CreateFromId(ruleset_id: i32, ruleset_ptr: *mut NativeRuleset) -> ErrorCode;
@@ -212,7 +224,7 @@ unsafe extern "C" {
     pub fn OsuDifficultyCalculator_CalculateMods(
         calculator_handle: NativeOsuDifficultyCalculatorHandle,
         ruleset_handle: NativeRulesetHandle,
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         attributes_ptr: *mut NativeOsuDifficultyAttributes,
     ) -> ErrorCode;
     pub fn OsuDifficultyCalculator_Destroy(
@@ -232,7 +244,7 @@ unsafe extern "C" {
     pub fn TaikoDifficultyCalculator_CalculateMods(
         calculator_handle: NativeTaikoDifficultyCalculatorHandle,
         ruleset_handle: NativeRulesetHandle,
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         attributes_ptr: *mut NativeTaikoDifficultyAttributes,
     ) -> ErrorCode;
     pub fn TaikoDifficultyCalculator_Destroy(
@@ -252,7 +264,7 @@ unsafe extern "C" {
     pub fn ManiaDifficultyCalculator_CalculateMods(
         calculator_handle: NativeManiaDifficultyCalculatorHandle,
         ruleset_handle: NativeRulesetHandle,
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         attributes_ptr: *mut NativeManiaDifficultyAttributes,
     ) -> ErrorCode;
     pub fn ManiaDifficultyCalculator_Destroy(
@@ -272,7 +284,7 @@ unsafe extern "C" {
     pub fn CatchDifficultyCalculator_CalculateMods(
         calculator_handle: NativeCatchDifficultyCalculatorHandle,
         ruleset_handle: NativeRulesetHandle,
-        mod_collection_handle: NativeModCollectionHandle,
+        mod_collection_handle: NativeModsCollectionHandle,
         attributes_ptr: *mut NativeCatchDifficultyAttributes,
     ) -> ErrorCode;
     pub fn CatchDifficultyCalculator_Destroy(

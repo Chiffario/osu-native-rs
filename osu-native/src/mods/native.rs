@@ -6,22 +6,22 @@ use std::{
 
 use libosu_native_sys::{
     ErrorCode, Mod_Create, Mod_Destroy, Mod_SetSetting, ModsCollection_Add, ModsCollection_Create,
-    ModsCollection_Destroy, NativeModCollectionHandle, NativeModHandle,
+    ModsCollection_Destroy, NativeMod, NativeModHandle, NativeModsCollection,
+    NativeModsCollectionHandle,
 };
 use rosu_mods::simple::SettingSimple;
 use thiserror::Error as ThisError;
 
 use crate::error::NativeError;
 
-pub(crate) struct ModCollection {
-    pub handle: NativeModCollectionHandle,
+impl_native!(NativeModsCollection: NativeModsCollectionHandle, ModsCollection_Destroy);
+
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq, Eq)]
+    pub(crate) struct ModsCollection(NativeModsCollection);
 }
 
-impl ModCollection {
-    pub fn handle(&self) -> NativeModCollectionHandle {
-        self.handle
-    }
-
+impl ModsCollection {
     pub fn new() -> Result<Self, NativeError> {
         let mut collection = MaybeUninit::uninit();
 
@@ -31,9 +31,9 @@ impl ModCollection {
             return Err(code.into());
         }
 
-        let handle = unsafe { collection.assume_init() };
+        let native = unsafe { collection.assume_init() };
 
-        Ok(Self { handle })
+        Ok(Self(native))
     }
 
     pub fn add(&self, gamemod: &Mod) -> Result<(), NativeError> {
@@ -47,14 +47,11 @@ impl ModCollection {
     }
 }
 
-impl Drop for ModCollection {
-    fn drop(&mut self) {
-        unsafe { ModsCollection_Destroy(self.handle) };
-    }
-}
+impl_native!(NativeMod: NativeModHandle, Mod_Destroy);
 
-pub(crate) struct Mod {
-    pub handle: NativeModHandle,
+declare_native_wrapper! {
+    #[derive(Debug, PartialEq, Eq)]
+    pub(crate) struct Mod(NativeMod);
 }
 
 #[derive(Debug, ThisError)]
@@ -88,9 +85,9 @@ impl Mod {
             return Err(code.into());
         }
 
-        let handle = unsafe { gamemod.assume_init() };
+        let native = unsafe { gamemod.assume_init() };
 
-        Ok(Self { handle })
+        Ok(Self(native))
     }
 
     #[expect(unused)]
@@ -118,11 +115,5 @@ impl Mod {
         }
 
         Ok(())
-    }
-}
-
-impl Drop for Mod {
-    fn drop(&mut self) {
-        unsafe { Mod_Destroy(self.handle) };
     }
 }
