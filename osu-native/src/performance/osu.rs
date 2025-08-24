@@ -7,6 +7,7 @@ use libosu_native_sys::{
 use rosu_mods::GameModSimple;
 
 use crate::{
+    beatmap::Beatmap,
     difficulty::osu::OsuDifficultyAttributes,
     mods::{IntoGameMods, native::ModCollection},
     performance::{PerformanceCalculator, ScoreStatistics},
@@ -48,6 +49,7 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
         &self,
         ruleset: &Ruleset,
         score: &ScoreStatistics,
+        beatmap: &Beatmap,
         mods: impl IntoGameMods,
         difficulty_attributes: &Self::DifficultyAttributes,
     ) -> Result<Self::Attributes, crate::error::OsuError> {
@@ -55,6 +57,8 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
         let mut attributes = MaybeUninit::uninit();
         let score = NativeScore {
             mods_handle: mods.handle(),
+            ruleset_handle: ruleset.handle(),
+            beatmap_handle: beatmap.handle(),
             max_combo: score.max_combo,
             accuracy: score.accuracy,
             count_miss: score.count_miss,
@@ -69,7 +73,6 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
         let code = unsafe {
             OsuPerformanceCalculator_Calculate(
                 self.handle,
-                ruleset.handle(),
                 score.into(),
                 difficulty_attributes.into(),
                 attributes.as_mut_ptr(),
@@ -92,6 +95,7 @@ pub struct OsuPerformanceAttributes {
     pub accuracy: f64,
     pub flashlight: f64,
     pub effective_miss_count: f64,
+    pub speed_deviation: Option<f64>,
 }
 
 impl HasNative for OsuPerformanceAttributes {
@@ -107,27 +111,36 @@ impl From<NativeOsuPerformanceAttributes> for OsuPerformanceAttributes {
             accuracy: value.accuracy,
             flashlight: value.flashlight,
             effective_miss_count: value.effective_miss_count,
+            speed_deviation: value.speed_deviation.into(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
+
+    use rosu_mods::{Acronym, GameModSimple};
+
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, osu::OsuDifficultyCalculator},
-        mods::native::ModCollection,
         performance::{PerformanceCalculator, ScoreStatistics, osu::OsuPerformanceCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
     #[test]
-    fn test_toy_box_performance_osu() {
+    fn test_toy_box_performance_osu() -> Result<(), Box<dyn Error>> {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
+        let calculator =
+            OsuDifficultyCalculator::new(ruleset, &beatmap)?.with_mods(vec![GameModSimple {
+                acronym: unsafe { Acronym::from_str_unchecked("HR") },
+                settings: Default::default(),
+            }])?;
         let attributes = calculator.calculate().unwrap();
+        println!("Difficulty attributes: {attributes:#?}");
 
         let mods = calculator.mods();
 
@@ -145,15 +158,17 @@ mod tests {
             count_slider_tail_hit: attributes.slider_count,
             count_large_tick_miss: 0,
         };
+        println!("Score: {score:?}");
 
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
         let perfcalc = OsuPerformanceCalculator::new().unwrap();
         let attributes = perfcalc
-            .calculate(&ruleset, &score, mods.0, &attributes)
+            .calculate(&ruleset, &score, &beatmap, mods.0, &attributes)
             .unwrap();
         println!("attributes: {attributes:#?}");
 
         assert_ne!(attributes.pp, 0.0);
+        Ok(())
     }
 
     #[test]
@@ -197,11 +212,11 @@ mod tests {
         let perfcalc = OsuPerformanceCalculator::new().unwrap();
         let mods = calculator.mods();
         let ss_attributes = perfcalc
-            .calculate(&ruleset, &ss, mods.0, &difficulty_attributes)
+            .calculate(&ruleset, &ss, &beatmap, mods.0, &difficulty_attributes)
             .unwrap();
         let mods = calculator.mods();
         let worse_attributes = perfcalc
-            .calculate(&ruleset, &worse, mods.0, &difficulty_attributes)
+            .calculate(&ruleset, &worse, &beatmap, mods.0, &difficulty_attributes)
             .unwrap();
 
         assert!(ss_attributes.pp > worse_attributes.pp);

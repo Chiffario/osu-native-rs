@@ -1,13 +1,31 @@
+use std::{marker::PhantomData, path::Path};
+
 use libosu_native_sys::{ErrorCode, NativeScore, OsuPerformanceCalculator_Create};
 use rosu_mods::GameModSimple;
 
 use crate::{
-    mods::{IntoGameMods, native::ModCollection},
-    ruleset::Ruleset,
+    beatmap::{Beatmap, BeatmapError},
+    difficulty::{
+        DifficultyCalculator,
+        osu::{OsuDifficultyAttributes, OsuDifficultyCalculator},
+        taiko::{TaikoDifficultyAttributes, TaikoDifficultyCalculator},
+    },
+    error::OsuError,
+    mods::{
+        IntoGameMods,
+        native::{ModCollection, ModCollectionError},
+    },
+    performance::{
+        osu::{OsuPerformanceAttributes, OsuPerformanceCalculator},
+        taiko::{TaikoPerformanceAttributes, TaikoPerformanceCalculator},
+    },
+    ruleset::{Ruleset, RulesetError, RulesetKind},
     utils::HasNative,
 };
 
+pub mod catch;
 pub mod osu;
+pub mod taiko;
 trait PerformanceCalculator: Sized {
     type DifficultyAttributes: HasNative;
 
@@ -19,11 +37,13 @@ trait PerformanceCalculator: Sized {
         &self,
         ruleset: &Ruleset,
         score: &ScoreStatistics,
+        beatmap: &Beatmap,
         mods: impl IntoGameMods,
         difficulty_attributes: &Self::DifficultyAttributes,
     ) -> Result<Self::Attributes, crate::error::OsuError>;
 }
 
+#[derive(Debug)]
 pub struct ScoreStatistics {
     pub max_combo: i32,
     pub accuracy: f64,
@@ -37,24 +57,19 @@ pub struct ScoreStatistics {
     pub count_large_tick_miss: i32,
 }
 
-// impl Into<NativeScore> for ScoreStatistics {
-//     fn into(self) -> NativeScore {
-//         NativeScore {
-//             mods_handle: ModCollection::new()
-//                 .unwrap()
-//                 .with_game_mods(self.mods)
-//                 .unwrap()
-//                 .handle(),
-//             max_combo: self.max_combo,
-//             accuracy: self.accuracy,
-//             count_miss: self.count_miss,
-//             count_meh: self.count_meh,
-//             count_ok: self.count_ok,
-//             count_good: self.count_good,
-//             count_great: self.count_great,
-//             count_perfect: self.count_perfect,
-//             count_slider_tail_hit: self.count_slider_tail_hit,
-//             count_large_tick_miss: self.count_large_tick_miss,
-//         }
-//     }
-// }
+impl Default for ScoreStatistics {
+    fn default() -> Self {
+        Self {
+            max_combo: Default::default(),
+            accuracy: 1.0,
+            count_miss: Default::default(),
+            count_meh: Default::default(),
+            count_ok: Default::default(),
+            count_good: Default::default(),
+            count_great: Default::default(),
+            count_perfect: Default::default(),
+            count_slider_tail_hit: Default::default(),
+            count_large_tick_miss: Default::default(),
+        }
+    }
+}
