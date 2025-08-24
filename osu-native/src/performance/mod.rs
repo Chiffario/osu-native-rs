@@ -24,6 +24,7 @@ use crate::{
 };
 
 pub mod catch;
+pub mod mania;
 pub mod osu;
 pub mod taiko;
 trait PerformanceCalculator: Sized {

@@ -25,6 +25,12 @@ pub struct ManiaDifficultyCalculator {
     mods: GameMods,
 }
 
+impl ManiaDifficultyCalculator {
+    pub fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+}
+
 impl Drop for ManiaDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { ManiaDifficultyCalculator_Destroy(self.handle) };
@@ -98,20 +104,29 @@ impl DifficultyCalculator for ManiaDifficultyCalculator {
     }
 }
 
+#[derive(Debug)]
+pub struct ManiaDifficultyAttributes {
+    pub star_rating: f64,
+    pub max_combo: i32,
+}
+
 impl From<NativeManiaDifficultyAttributes> for ManiaDifficultyAttributes {
     fn from(value: NativeManiaDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
         }
     }
 }
 
-pub struct ManiaDifficultyAttributes {
-    pub star_rating: f64,
-    pub max_combo: usize,
+impl Into<NativeManiaDifficultyAttributes> for &ManiaDifficultyAttributes {
+    fn into(self) -> NativeManiaDifficultyAttributes {
+        NativeManiaDifficultyAttributes {
+            star_rating: self.star_rating,
+            max_combo: self.max_combo,
+        }
+    }
 }
-
 impl HasNative for ManiaDifficultyAttributes {
     type Native = NativeManiaDifficultyAttributes;
 }
