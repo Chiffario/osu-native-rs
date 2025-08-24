@@ -25,6 +25,12 @@ pub struct TaikoDifficultyCalculator {
     mods: GameMods,
 }
 
+impl TaikoDifficultyCalculator {
+    pub fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+}
+
 impl Drop for TaikoDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { TaikoDifficultyCalculator_Destroy(self.handle) };
@@ -98,9 +104,10 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
     }
 }
 
+#[derive(Debug)]
 pub struct TaikoDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: usize,
+    pub max_combo: i32,
     pub rhythm_difficulty: f64,
     pub reading_difficulty: f64,
     pub colour_difficulty: f64,
@@ -119,7 +126,7 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
     fn from(value: NativeTaikoDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
             rhythm_difficulty: value.rhythm_difficulty,
             reading_difficulty: value.reading_difficulty,
             colour_difficulty: value.colour_difficulty,
@@ -128,6 +135,23 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
             rhythm_top_strains: value.rhythm_top_strains,
             colour_top_strains: value.colour_top_strains,
             stamina_top_strains: value.stamina_top_strains,
+        }
+    }
+}
+
+impl Into<NativeTaikoDifficultyAttributes> for &TaikoDifficultyAttributes {
+    fn into(self) -> NativeTaikoDifficultyAttributes {
+        NativeTaikoDifficultyAttributes {
+            star_rating: self.star_rating,
+            max_combo: self.max_combo,
+            rhythm_difficulty: self.rhythm_difficulty,
+            reading_difficulty: self.reading_difficulty,
+            colour_difficulty: self.colour_difficulty,
+            stamina_difficulty: self.stamina_difficulty,
+            mono_stamina_factor: self.mono_stamina_factor,
+            rhythm_top_strains: self.rhythm_top_strains,
+            colour_top_strains: self.colour_top_strains,
+            stamina_top_strains: self.stamina_top_strains,
         }
     }
 }

@@ -25,6 +25,12 @@ pub struct CatchDifficultyCalculator {
     mods: GameMods,
 }
 
+impl CatchDifficultyCalculator {
+    pub fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+}
+
 impl Drop for CatchDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { CatchDifficultyCalculator_Destroy(self.handle) };
@@ -102,14 +108,23 @@ impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
     fn from(value: NativeCatchDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
         }
     }
 }
 
+impl Into<NativeCatchDifficultyAttributes> for &CatchDifficultyAttributes {
+    fn into(self) -> NativeCatchDifficultyAttributes {
+        NativeCatchDifficultyAttributes {
+            star_rating: self.star_rating,
+            max_combo: self.max_combo,
+        }
+    }
+}
+#[derive(Debug)]
 pub struct CatchDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: usize,
+    pub max_combo: i32,
 }
 
 impl HasNative for CatchDifficultyAttributes {
