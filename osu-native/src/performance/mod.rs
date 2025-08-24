@@ -45,11 +45,11 @@ pub struct ScoreStatistics {
     pub max_combo: i32,
     pub accuracy: f64,
     pub count_miss: i32,
-    pub count_meh: i32,
-    pub count_ok: i32,
-    pub count_good: i32,
-    pub count_great: i32,
-    pub count_perfect: i32,
+    pub count_meh: i32,     // n50
+    pub count_ok: i32,      // n100
+    pub count_good: i32,    // n200
+    pub count_great: i32,   // n300
+    pub count_perfect: i32, // n320
     pub count_slider_tail_hit: i32,
     pub count_large_tick_miss: i32,
 }
@@ -247,22 +247,34 @@ impl<T: RulesetTrait> PerformanceCalculatorBuilder<T> {
     }
 }
 
+macro_rules! implement_setter {
+    // Match patterns like: alias -> field, alias -> field, ...
+    {$($alias:ident -> $field:ident),+ $(,)?} => {
+        $(
+            fn $alias(mut self, n: i32) -> Self {
+                self.score_state.$field = n;
+                self
+            }
+        )+
+    };
+
+    // Support for different types, not just i32
+    {$($alias:ident -> $field:ident : $type:ty),+ $(,)?} => {
+        $(
+            fn $alias(mut self, value: $type) -> Self {
+                self.score_state.$field = value;
+                self
+            }
+        )+
+    };
+}
+
 impl PerformanceCalculatorBuilder<Osu> {
-    fn n300(mut self, n: i32) -> Self {
-        self.score_state.count_great = n;
-        self
-    }
-    fn n100(mut self, n: i32) -> Self {
-        self.score_state.count_ok = n;
-        self
-    }
-    fn n50(mut self, n: i32) -> Self {
-        self.score_state.count_meh = n;
-        self
-    }
-    fn slider_tick_hits(mut self, n: i32) -> Self {
-        self.score_state.count_slider_tail_hit = n;
-        self
+    implement_setter! {
+        n300 -> count_great,
+        n100 -> count_ok,
+        n50 -> count_meh,
+        slider_tick_hits -> count_slider_tail_hit,
     }
     fn slider_tick_misses(mut self, n: i32) -> Self {
         self.score_state.count_slider_tail_hit = self.difficulty_attributes.slider_count - n;
@@ -271,41 +283,19 @@ impl PerformanceCalculatorBuilder<Osu> {
 }
 
 impl PerformanceCalculatorBuilder<Taiko> {
-    fn n300(mut self, n: i32) -> Self {
-        self.score_state.count_great = n;
-        self
-    }
-
-    fn n100(mut self, n: i32) -> Self {
-        self.score_state.count_ok = n;
-        self
+    implement_setter! {
+        n300 -> count_great,
+        n100 -> count_ok,
     }
 }
 
 impl PerformanceCalculatorBuilder<Mania> {
-    fn n320(mut self, n: i32) -> Self {
-        self.score_state.count_perfect = n;
-        self
-    }
-    fn n300(mut self, n: i32) -> Self {
-        self.score_state.count_great = n;
-        self
-    }
-    fn n200(mut self, n: i32) -> Self {
-        self.score_state.count_good = n;
-        self
-    }
-    fn n100(mut self, n: i32) -> Self {
-        self.score_state.count_ok = n;
-        self
-    }
-    fn n50(mut self, n: i32) -> Self {
-        self.score_state.count_meh = n;
-        self
-    }
-    fn slider_tick_hits(mut self, n: i32) -> Self {
-        self.score_state.count_slider_tail_hit = n;
-        self
+    implement_setter! {
+        n320 -> count_perfect,
+        n300 -> count_great,
+        n200 -> count_good,
+        n100 -> count_ok,
+        n50 -> count_meh,
     }
 }
 impl PerformanceCalculatorBuilder<Catch> {
