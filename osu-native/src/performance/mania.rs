@@ -4,7 +4,6 @@ use libosu_native_sys::{
     ErrorCode, ManiaPerformanceCalculator_Calculate, ManiaPerformanceCalculator_Create,
     ManiaPerformanceCalculator_Destroy, NativeManiaPerformanceAttributes, NativeScore,
 };
-use rosu_mods::GameModSimple;
 
 use crate::{
     beatmap::Beatmap,
@@ -121,7 +120,6 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, mania::*},
-        mods::native::ModCollection,
         performance::{PerformanceCalculator, ScoreStatistics, mania::ManiaPerformanceCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,

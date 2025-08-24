@@ -1,9 +1,6 @@
 #![allow(dead_code)]
 
-use std::{
-    ffi,
-    fmt::{self, Debug},
-};
+use std::fmt::Debug;
 #[repr(C)]
 pub struct NativeOsuDifficultyAttributes {
     pub star_rating: f64,

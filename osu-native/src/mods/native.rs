@@ -8,11 +8,11 @@ use libosu_native_sys::{
     ErrorCode, Mod_Create, Mod_Destroy, Mod_SetSetting, ModsCollection_Add, ModsCollection_Create,
     ModsCollection_Destroy, NativeModCollectionHandle, NativeModHandle,
 };
-use rosu_mods::{GameMod, GameModSimple, error::AcronymParseError, simple::SettingSimple};
+use rosu_mods::simple::SettingSimple;
 use thiserror::Error as ThisError;
 
 use crate::{
-    error::{NativeError, OsuError},
+    error::NativeError,
     mods::{GameModsError, IntoGameMods},
 };
 

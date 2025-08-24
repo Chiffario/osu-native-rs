@@ -1,23 +1,18 @@
+#![allow(dead_code)]
 use std::{marker::PhantomData, path::Path};
 
-use libosu_native_sys::{ErrorCode, NativeScore, OsuPerformanceCalculator_Create};
 use rosu_mods::GameModSimple;
 
 use crate::{
     beatmap::{Beatmap, BeatmapError},
     difficulty::{
-        DifficultyCalculator,
-        osu::{OsuDifficultyAttributes, OsuDifficultyCalculator},
-        taiko::{TaikoDifficultyAttributes, TaikoDifficultyCalculator},
+        DifficultyCalculator, osu::OsuDifficultyCalculator, taiko::TaikoDifficultyCalculator,
     },
     error::OsuError,
-    mods::{
-        IntoGameMods,
-        native::{ModCollection, ModCollectionError},
-    },
+    mods::{IntoGameMods, native::ModCollectionError},
     performance::{
-        osu::{OsuPerformanceAttributes, OsuPerformanceCalculator},
-        taiko::{TaikoPerformanceAttributes, TaikoPerformanceCalculator},
+        catch::CatchPerformanceCalculator, mania::ManiaPerformanceCalculator,
+        osu::OsuPerformanceCalculator, taiko::TaikoPerformanceCalculator,
     },
     ruleset::{Ruleset, RulesetError, RulesetKind},
     utils::HasNative,
@@ -27,7 +22,7 @@ pub mod catch;
 pub mod mania;
 pub mod osu;
 pub mod taiko;
-trait PerformanceCalculator: Sized {
+pub trait PerformanceCalculator: Sized {
     type DifficultyAttributes: HasNative;
 
     type Attributes: HasNative;
@@ -80,19 +75,22 @@ pub struct WithBeatmap;
 
 pub struct Osu;
 pub struct Taiko;
+pub struct Mania;
+pub struct Catch;
 pub trait RulesetTrait {
-    // type DifficultyAttributes;
     type PerformanceCalculatorTy: PerformanceCalculator;
 }
 impl RulesetTrait for Osu {
-    // type DifficultyAttributes = OsuDifficultyAttributes;
-
     type PerformanceCalculatorTy = OsuPerformanceCalculator;
 }
 impl RulesetTrait for Taiko {
-    // type DifficultyAttributes = TaikoDifficultyAttributes;
-
     type PerformanceCalculatorTy = TaikoPerformanceCalculator;
+}
+impl RulesetTrait for Mania {
+    type PerformanceCalculatorTy = ManiaPerformanceCalculator;
+}
+impl RulesetTrait for Catch {
+    type PerformanceCalculatorTy = CatchPerformanceCalculator;
 }
 pub struct WithRuleset<T: RulesetTrait> {
     _marker: PhantomData<T>,
@@ -159,12 +157,24 @@ impl CalculatorBuilder<WithBeatmap> {
             _marker: PhantomData::<WithRuleset<Taiko>>,
         })
     }
-    // fn mania(self) -> Result<CalculatorBuilder<WithRuleset<Mania>>, RulesetError> {
-    //     todo!()
-    // }
-    // fn catch(self) -> Result<CalculatorBuilder<WithRuleset<Catch>>, RulesetError> {
-    //     todo!()
-    // }
+    fn mania(self) -> Result<CalculatorBuilder<WithRuleset<Mania>>, RulesetError> {
+        let ruleset = Ruleset::new(RulesetKind::Mania)?;
+        Ok(CalculatorBuilder {
+            beatmap: self.beatmap,
+            ruleset: Some(ruleset),
+            mods: None,
+            _marker: PhantomData::<WithRuleset<Mania>>,
+        })
+    }
+    fn catch(self) -> Result<CalculatorBuilder<WithRuleset<Catch>>, RulesetError> {
+        let ruleset = Ruleset::new(RulesetKind::Catch)?;
+        Ok(CalculatorBuilder {
+            beatmap: self.beatmap,
+            ruleset: Some(ruleset),
+            mods: None,
+            _marker: PhantomData::<WithRuleset<Catch>>,
+        })
+    }
 }
 
 impl<T> CalculatorBuilder<WithRuleset<T>>
@@ -300,6 +310,39 @@ impl PerformanceCalculatorBuilder<Taiko> {
     }
 }
 
+impl PerformanceCalculatorBuilder<Mania> {
+    fn n320(mut self, n: i32) -> Self {
+        self.score_state.count_perfect = n;
+        self
+    }
+    fn n300(mut self, n: i32) -> Self {
+        self.score_state.count_great = n;
+        self
+    }
+    fn n200(mut self, n: i32) -> Self {
+        self.score_state.count_good = n;
+        self
+    }
+    fn n100(mut self, n: i32) -> Self {
+        self.score_state.count_ok = n;
+        self
+    }
+    fn n50(mut self, n: i32) -> Self {
+        self.score_state.count_meh = n;
+        self
+    }
+    fn slider_tick_hits(mut self, n: i32) -> Self {
+        self.score_state.count_slider_tail_hit = n;
+        self
+    }
+}
+impl PerformanceCalculatorBuilder<Catch> {
+    fn n300(mut self, n: i32) -> Self {
+        self.score_state.count_great = n;
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -327,6 +370,7 @@ mod tests {
             .n100(10)
             .accuracy(0.98)
             .calculator()?;
+        assert!(calc.pp > 0.0);
         Ok(())
     }
 }

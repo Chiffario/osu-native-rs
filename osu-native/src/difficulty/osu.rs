@@ -177,7 +177,6 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::DifficultyCalculator,
-        mods::native::{Mod, ModCollection},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };

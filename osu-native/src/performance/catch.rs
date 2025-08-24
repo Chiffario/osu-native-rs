@@ -4,7 +4,6 @@ use libosu_native_sys::{
     CatchPerformanceCalculator_Calculate, CatchPerformanceCalculator_Create,
     CatchPerformanceCalculator_Destroy, ErrorCode, NativeCatchPerformanceAttributes, NativeScore,
 };
-use rosu_mods::GameModSimple;
 
 use crate::{
     beatmap::Beatmap,
@@ -114,7 +113,6 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, catch::*},
-        mods::native::ModCollection,
         performance::{PerformanceCalculator, ScoreStatistics, catch::CatchPerformanceCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
