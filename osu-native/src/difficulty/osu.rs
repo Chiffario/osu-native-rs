@@ -38,7 +38,7 @@ impl Drop for OsuDifficultyCalculator {
 }
 
 impl DifficultyCalculator for OsuDifficultyCalculator {
-    type Attributes = OsuDifficultyAttributes;
+    type DifficultyAttributes = OsuDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -64,7 +64,7 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mod_collection = ModCollection::new()?;
 
         let mods = self

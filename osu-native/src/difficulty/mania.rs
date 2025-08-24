@@ -38,7 +38,7 @@ impl Drop for ManiaDifficultyCalculator {
 }
 
 impl DifficultyCalculator for ManiaDifficultyCalculator {
-    type Attributes = ManiaDifficultyAttributes;
+    type DifficultyAttributes = ManiaDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -64,7 +64,7 @@ impl DifficultyCalculator for ManiaDifficultyCalculator {
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
         let mods_vec = self

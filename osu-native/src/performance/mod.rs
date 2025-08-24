@@ -6,7 +6,8 @@ use rosu_mods::GameModSimple;
 use crate::{
     beatmap::{Beatmap, BeatmapError},
     difficulty::{
-        DifficultyCalculator, osu::OsuDifficultyCalculator, taiko::TaikoDifficultyCalculator,
+        DifficultyCalculator, catch::CatchDifficultyCalculator, mania::ManiaDifficultyCalculator,
+        osu::OsuDifficultyCalculator, taiko::TaikoDifficultyCalculator,
     },
     error::OsuError,
     mods::{IntoGameMods, native::ModCollectionError},
@@ -138,43 +139,25 @@ impl CalculatorBuilder<Empty> {
     }
 }
 
+macro_rules! implement_ruleset {
+    ($name:ident, $ruleset:expr, $ty:ident) => {
+        fn $name(self) -> Result<CalculatorBuilder<WithRuleset<$ty>>, RulesetError> {
+            let ruleset = Ruleset::new($ruleset)?;
+            Ok(CalculatorBuilder {
+                beatmap: self.beatmap,
+                ruleset: Some(ruleset),
+                mods: None,
+                _marker: PhantomData::<WithRuleset<$ty>>,
+            })
+        }
+    };
+}
+
 impl CalculatorBuilder<WithBeatmap> {
-    fn osu(self) -> Result<CalculatorBuilder<WithRuleset<Osu>>, RulesetError> {
-        let ruleset = Ruleset::new(RulesetKind::Osu)?;
-        Ok(CalculatorBuilder {
-            beatmap: self.beatmap,
-            ruleset: Some(ruleset),
-            mods: None,
-            _marker: PhantomData::<WithRuleset<Osu>>,
-        })
-    }
-    fn taiko(self) -> Result<CalculatorBuilder<WithRuleset<Taiko>>, RulesetError> {
-        let ruleset = Ruleset::new(RulesetKind::Taiko)?;
-        Ok(CalculatorBuilder {
-            beatmap: self.beatmap,
-            ruleset: Some(ruleset),
-            mods: None,
-            _marker: PhantomData::<WithRuleset<Taiko>>,
-        })
-    }
-    fn mania(self) -> Result<CalculatorBuilder<WithRuleset<Mania>>, RulesetError> {
-        let ruleset = Ruleset::new(RulesetKind::Mania)?;
-        Ok(CalculatorBuilder {
-            beatmap: self.beatmap,
-            ruleset: Some(ruleset),
-            mods: None,
-            _marker: PhantomData::<WithRuleset<Mania>>,
-        })
-    }
-    fn catch(self) -> Result<CalculatorBuilder<WithRuleset<Catch>>, RulesetError> {
-        let ruleset = Ruleset::new(RulesetKind::Catch)?;
-        Ok(CalculatorBuilder {
-            beatmap: self.beatmap,
-            ruleset: Some(ruleset),
-            mods: None,
-            _marker: PhantomData::<WithRuleset<Catch>>,
-        })
-    }
+    implement_ruleset!(osu, RulesetKind::Osu, Osu);
+    implement_ruleset!(taiko, RulesetKind::Taiko, Taiko);
+    implement_ruleset!(mania, RulesetKind::Mania, Mania);
+    implement_ruleset!(catch, RulesetKind::Catch, Catch);
 }
 
 impl<T> CalculatorBuilder<WithRuleset<T>>
@@ -196,53 +179,42 @@ trait Difficulty {
     fn difficulty(self) -> Result<Self::Calculator, OsuError>;
     fn performance(self) -> Result<PerformanceCalculatorBuilder<Self::RulesetType>, OsuError>;
 }
-impl Difficulty for CalculatorBuilder<WithRuleset<Osu>> {
-    type Calculator = OsuDifficultyCalculator;
-    type RulesetType = Osu;
-    fn difficulty(self) -> Result<Self::Calculator, OsuError> {
-        Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())
-    }
-    fn performance(self) -> Result<PerformanceCalculatorBuilder<Self::RulesetType>, OsuError> {
-        let ruleset = Ruleset::new(self.ruleset.as_ref().unwrap().kind).unwrap();
-        let attr = Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())?
-            .calculate()?;
-        let mut score = ScoreStatistics::default();
-        score.max_combo = attr.max_combo;
-        Ok(PerformanceCalculatorBuilder {
-            beatmap: self.beatmap.unwrap(),
-            ruleset: ruleset,
-            mods: self.mods.unwrap(),
-            difficulty_attributes: attr,
-            score_state: score,
-            _marker: PhantomData::<Osu>,
-        })
-    }
+
+macro_rules! implement_difficulty {
+    ($calc:ty, $ruleset:ty) => {
+        impl Difficulty for CalculatorBuilder<WithRuleset<$ruleset>> {
+            type Calculator = $calc;
+            type RulesetType = $ruleset;
+
+            fn difficulty(self) -> Result<Self::Calculator, OsuError> {
+                Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())
+            }
+            fn performance(
+                self,
+            ) -> Result<PerformanceCalculatorBuilder<Self::RulesetType>, OsuError> {
+                let ruleset = Ruleset::new(self.ruleset.as_ref().unwrap().kind).unwrap();
+                let attr =
+                    Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())?
+                        .calculate()?;
+                let mut score = ScoreStatistics::default();
+                score.max_combo = attr.max_combo;
+                Ok(PerformanceCalculatorBuilder {
+                    beatmap: self.beatmap.unwrap(),
+                    ruleset: ruleset,
+                    mods: self.mods.unwrap(),
+                    difficulty_attributes: attr,
+                    score_state: score,
+                    _marker: PhantomData::<Self::RulesetType>,
+                })
+            }
+        }
+    };
 }
 
-impl Difficulty for CalculatorBuilder<WithRuleset<Taiko>> {
-    type Calculator = TaikoDifficultyCalculator;
-    fn difficulty(self) -> Result<Self::Calculator, OsuError> {
-        Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())
-    }
-
-    type RulesetType = Taiko;
-
-    fn performance(self) -> Result<PerformanceCalculatorBuilder<Self::RulesetType>, OsuError> {
-        let ruleset = Ruleset::new(self.ruleset.as_ref().unwrap().kind).unwrap();
-        let attr = Self::Calculator::new(self.ruleset.unwrap(), self.beatmap.as_ref().unwrap())?
-            .calculate()?;
-        let mut score = ScoreStatistics::default();
-        score.max_combo = attr.max_combo;
-        Ok(PerformanceCalculatorBuilder {
-            beatmap: self.beatmap.unwrap(),
-            ruleset: ruleset,
-            mods: self.mods.unwrap(),
-            difficulty_attributes: attr,
-            score_state: score,
-            _marker: PhantomData::<Taiko>,
-        })
-    }
-}
+implement_difficulty!(OsuDifficultyCalculator, Osu);
+implement_difficulty!(TaikoDifficultyCalculator, Taiko);
+implement_difficulty!(ManiaDifficultyCalculator, Mania);
+implement_difficulty!(CatchDifficultyCalculator, Catch);
 
 impl<T: RulesetTrait> PerformanceCalculatorBuilder<T> {
     fn with_score_state(mut self, score: ScoreStatistics) -> Self {

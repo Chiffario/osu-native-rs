@@ -38,7 +38,7 @@ impl Drop for TaikoDifficultyCalculator {
 }
 
 impl DifficultyCalculator for TaikoDifficultyCalculator {
-    type Attributes = TaikoDifficultyAttributes;
+    type DifficultyAttributes = TaikoDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -64,7 +64,7 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
         let mods_vec = self
