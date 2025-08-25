@@ -25,6 +25,8 @@ pub struct OsuDifficultyCalculator {
     mods: GameMods,
 }
 
+impl OsuDifficultyCalculator {}
+
 impl Drop for OsuDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { OsuDifficultyCalculator_Destroy(self.handle) };
@@ -32,7 +34,7 @@ impl Drop for OsuDifficultyCalculator {
 }
 
 impl DifficultyCalculator for OsuDifficultyCalculator {
-    type Attributes = OsuDifficultyAttributes;
+    type DifficultyAttributes = OsuDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -52,13 +54,17 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
         })
     }
 
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+
+    fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
 
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mod_collection = ModCollection::new()?;
 
         let mods = self
@@ -101,7 +107,7 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
 #[derive(Debug, PartialEq)]
 pub struct OsuDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: usize,
+    pub max_combo: i32,
     pub aim_difficulty: f64,
     pub aim_difficulty_slider_count: f64,
     pub speed_difficulty: f64,
@@ -124,7 +130,7 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
     fn from(value: NativeOsuDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
             aim_difficulty: value.aim_difficulty,
             aim_difficulty_slider_count: value.aim_difficulty_slider_count,
             speed_difficulty: value.speed_difficulty,
@@ -141,6 +147,26 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
     }
 }
 
+impl From<&OsuDifficultyAttributes> for NativeOsuDifficultyAttributes {
+    fn from(val: &OsuDifficultyAttributes) -> Self {
+        NativeOsuDifficultyAttributes {
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+            aim_difficulty: val.aim_difficulty,
+            aim_difficulty_slider_count: val.aim_difficulty_slider_count,
+            speed_difficulty: val.speed_difficulty,
+            speed_note_count: val.speed_note_count,
+            flashlight_difficulty: val.flashlight_difficulty,
+            slider_factor: val.slider_factor,
+            aim_difficult_strain_count: val.aim_difficult_strain_count,
+            speed_difficult_strain_count: val.speed_difficult_strain_count,
+            drain_rate: val.drain_rate,
+            hit_circle_count: val.hit_circle_count,
+            slider_count: val.slider_count,
+            spinner_count: val.spinner_count,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -150,8 +176,7 @@ mod tests {
     use super::OsuDifficultyCalculator;
     use crate::{
         beatmap::Beatmap,
-        calculator::DifficultyCalculator,
-        mods::native::{Mod, ModCollection},
+        difficulty::DifficultyCalculator,
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
@@ -191,7 +216,7 @@ mod tests {
         let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
         let calculator_with_mods = OsuDifficultyCalculator::new(ruleset, &beatmap)
             .unwrap()
-            .mods(vec![mods])
+            .with_mods(vec![mods])
             .unwrap();
         let attributes_with_mods = calculator_with_mods.calculate().unwrap();
 

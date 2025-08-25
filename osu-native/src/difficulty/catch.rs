@@ -32,7 +32,7 @@ impl Drop for CatchDifficultyCalculator {
 }
 
 impl DifficultyCalculator for CatchDifficultyCalculator {
-    type Attributes = CatchDifficultyAttributes;
+    type DifficultyAttributes = CatchDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -52,13 +52,17 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
         })
     }
 
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+
+    fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
 
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
         let mods_vec = self
@@ -102,14 +106,23 @@ impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
     fn from(value: NativeCatchDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
         }
     }
 }
 
+impl From<&CatchDifficultyAttributes> for NativeCatchDifficultyAttributes {
+    fn from(val: &CatchDifficultyAttributes) -> Self {
+        NativeCatchDifficultyAttributes {
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+        }
+    }
+}
+#[derive(Debug)]
 pub struct CatchDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: usize,
+    pub max_combo: i32,
 }
 
 impl HasNative for CatchDifficultyAttributes {
@@ -124,7 +137,7 @@ mod tests {
 
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, catch::CatchDifficultyCalculator},
+        difficulty::{DifficultyCalculator, catch::CatchDifficultyCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
@@ -152,7 +165,7 @@ mod tests {
         let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
         let calculator_with_mods = CatchDifficultyCalculator::new(ruleset, &beatmap)
             .unwrap()
-            .mods(vec![mods])
+            .with_mods(vec![mods])
             .unwrap();
         let attributes_with_mods = calculator_with_mods.calculate().unwrap();
 
