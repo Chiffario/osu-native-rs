@@ -147,23 +147,23 @@ impl From<NativeOsuDifficultyAttributes> for OsuDifficultyAttributes {
     }
 }
 
-impl Into<NativeOsuDifficultyAttributes> for &OsuDifficultyAttributes {
-    fn into(self) -> NativeOsuDifficultyAttributes {
+impl From<&OsuDifficultyAttributes> for NativeOsuDifficultyAttributes {
+    fn from(val: &OsuDifficultyAttributes) -> Self {
         NativeOsuDifficultyAttributes {
-            star_rating: self.star_rating,
-            max_combo: self.max_combo,
-            aim_difficulty: self.aim_difficulty,
-            aim_difficulty_slider_count: self.aim_difficulty_slider_count,
-            speed_difficulty: self.speed_difficulty,
-            speed_note_count: self.speed_note_count,
-            flashlight_difficulty: self.flashlight_difficulty,
-            slider_factor: self.slider_factor,
-            aim_difficult_strain_count: self.aim_difficult_strain_count,
-            speed_difficult_strain_count: self.speed_difficult_strain_count,
-            drain_rate: self.drain_rate,
-            hit_circle_count: self.hit_circle_count,
-            slider_count: self.slider_count,
-            spinner_count: self.spinner_count,
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+            aim_difficulty: val.aim_difficulty,
+            aim_difficulty_slider_count: val.aim_difficulty_slider_count,
+            speed_difficulty: val.speed_difficulty,
+            speed_note_count: val.speed_note_count,
+            flashlight_difficulty: val.flashlight_difficulty,
+            slider_factor: val.slider_factor,
+            aim_difficult_strain_count: val.aim_difficult_strain_count,
+            speed_difficult_strain_count: val.speed_difficult_strain_count,
+            drain_rate: val.drain_rate,
+            hit_circle_count: val.hit_circle_count,
+            slider_count: val.slider_count,
+            spinner_count: val.spinner_count,
         }
     }
 }

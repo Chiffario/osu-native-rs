@@ -117,11 +117,11 @@ impl From<NativeManiaDifficultyAttributes> for ManiaDifficultyAttributes {
     }
 }
 
-impl Into<NativeManiaDifficultyAttributes> for &ManiaDifficultyAttributes {
-    fn into(self) -> NativeManiaDifficultyAttributes {
+impl From<&ManiaDifficultyAttributes> for NativeManiaDifficultyAttributes {
+    fn from(val: &ManiaDifficultyAttributes) -> Self {
         NativeManiaDifficultyAttributes {
-            star_rating: self.star_rating,
-            max_combo: self.max_combo,
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
         }
     }
 }

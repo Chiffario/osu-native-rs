@@ -72,7 +72,7 @@ impl PerformanceCalculator for CatchPerformanceCalculator {
         let code = unsafe {
             CatchPerformanceCalculator_Calculate(
                 self.handle,
-                score.into(),
+                score,
                 difficulty_attributes.into(),
                 attributes.as_mut_ptr(),
             )
@@ -101,9 +101,9 @@ impl From<NativeCatchPerformanceAttributes> for CatchPerformanceAttributes {
     }
 }
 
-impl Into<NativeCatchPerformanceAttributes> for CatchPerformanceAttributes {
-    fn into(self) -> NativeCatchPerformanceAttributes {
-        NativeCatchPerformanceAttributes { total: self.pp }
+impl From<CatchPerformanceAttributes> for NativeCatchPerformanceAttributes {
+    fn from(val: CatchPerformanceAttributes) -> Self {
+        NativeCatchPerformanceAttributes { total: val.pp }
     }
 }
 #[cfg(test)]

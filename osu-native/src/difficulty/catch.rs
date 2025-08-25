@@ -111,11 +111,11 @@ impl From<NativeCatchDifficultyAttributes> for CatchDifficultyAttributes {
     }
 }
 
-impl Into<NativeCatchDifficultyAttributes> for &CatchDifficultyAttributes {
-    fn into(self) -> NativeCatchDifficultyAttributes {
+impl From<&CatchDifficultyAttributes> for NativeCatchDifficultyAttributes {
+    fn from(val: &CatchDifficultyAttributes) -> Self {
         NativeCatchDifficultyAttributes {
-            star_rating: self.star_rating,
-            max_combo: self.max_combo,
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
         }
     }
 }

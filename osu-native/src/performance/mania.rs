@@ -72,7 +72,7 @@ impl PerformanceCalculator for ManiaPerformanceCalculator {
         let code = unsafe {
             ManiaPerformanceCalculator_Calculate(
                 self.handle,
-                score.into(),
+                score,
                 difficulty_attributes.into(),
                 attributes.as_mut_ptr(),
             )
@@ -105,11 +105,11 @@ impl From<NativeManiaPerformanceAttributes> for ManiaPerformanceAttributes {
     }
 }
 
-impl Into<NativeManiaPerformanceAttributes> for ManiaPerformanceAttributes {
-    fn into(self) -> NativeManiaPerformanceAttributes {
+impl From<ManiaPerformanceAttributes> for NativeManiaPerformanceAttributes {
+    fn from(val: ManiaPerformanceAttributes) -> Self {
         NativeManiaPerformanceAttributes {
-            total: self.pp,
-            difficulty: self.difficulty,
+            total: val.pp,
+            difficulty: val.difficulty,
         }
     }
 }

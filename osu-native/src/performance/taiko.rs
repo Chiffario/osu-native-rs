@@ -4,7 +4,6 @@ use libosu_native_sys::{
     ErrorCode, NativeScore, NativeTaikoPerformanceAttributes, TaikoPerformanceCalculator_Calculate,
     TaikoPerformanceCalculator_Create, TaikoPerformanceCalculator_Destroy,
 };
-use rosu_mods::GameModSimple;
 
 use crate::{
     beatmap::Beatmap,
@@ -73,7 +72,7 @@ impl PerformanceCalculator for TaikoPerformanceCalculator {
         let code = unsafe {
             TaikoPerformanceCalculator_Calculate(
                 self.handle,
-                score.into(),
+                score,
                 difficulty_attributes.into(),
                 attributes.as_mut_ptr(),
             )

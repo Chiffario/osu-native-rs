@@ -188,7 +188,7 @@ macro_rules! implement_difficulty {
                 score.max_combo = attr.max_combo;
                 Ok(PerformanceCalculatorBuilder {
                     beatmap: self.beatmap.unwrap(),
-                    ruleset: ruleset,
+                    ruleset,
                     mods: self.mods.unwrap(),
                     difficulty_attributes: attr,
                     score_state: score,

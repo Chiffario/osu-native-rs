@@ -137,19 +137,19 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
     }
 }
 
-impl Into<NativeTaikoDifficultyAttributes> for &TaikoDifficultyAttributes {
-    fn into(self) -> NativeTaikoDifficultyAttributes {
+impl From<&TaikoDifficultyAttributes> for NativeTaikoDifficultyAttributes {
+    fn from(val: &TaikoDifficultyAttributes) -> Self {
         NativeTaikoDifficultyAttributes {
-            star_rating: self.star_rating,
-            max_combo: self.max_combo,
-            rhythm_difficulty: self.rhythm_difficulty,
-            reading_difficulty: self.reading_difficulty,
-            colour_difficulty: self.colour_difficulty,
-            stamina_difficulty: self.stamina_difficulty,
-            mono_stamina_factor: self.mono_stamina_factor,
-            rhythm_top_strains: self.rhythm_top_strains,
-            colour_top_strains: self.colour_top_strains,
-            stamina_top_strains: self.stamina_top_strains,
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+            rhythm_difficulty: val.rhythm_difficulty,
+            reading_difficulty: val.reading_difficulty,
+            colour_difficulty: val.colour_difficulty,
+            stamina_difficulty: val.stamina_difficulty,
+            mono_stamina_factor: val.mono_stamina_factor,
+            rhythm_top_strains: val.rhythm_top_strains,
+            colour_top_strains: val.colour_top_strains,
+            stamina_top_strains: val.stamina_top_strains,
         }
     }
 }
