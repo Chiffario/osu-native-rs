@@ -25,12 +25,6 @@ pub struct CatchDifficultyCalculator {
     mods: GameMods,
 }
 
-impl CatchDifficultyCalculator {
-    pub fn mods(&self) -> GameMods {
-        self.mods.clone()
-    }
-}
-
 impl Drop for CatchDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { CatchDifficultyCalculator_Destroy(self.handle) };
@@ -56,6 +50,10 @@ impl DifficultyCalculator for CatchDifficultyCalculator {
             ruleset,
             mods: GameMods::default(),
         })
+    }
+
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
     }
 
     fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {

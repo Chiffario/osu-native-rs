@@ -25,12 +25,6 @@ pub struct TaikoDifficultyCalculator {
     mods: GameMods,
 }
 
-impl TaikoDifficultyCalculator {
-    pub fn mods(&self) -> GameMods {
-        self.mods.clone()
-    }
-}
-
 impl Drop for TaikoDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { TaikoDifficultyCalculator_Destroy(self.handle) };
@@ -56,6 +50,10 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
             ruleset,
             mods: GameMods::default(),
         })
+    }
+
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
     }
 
     fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {

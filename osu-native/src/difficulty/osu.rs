@@ -25,11 +25,7 @@ pub struct OsuDifficultyCalculator {
     mods: GameMods,
 }
 
-impl OsuDifficultyCalculator {
-    pub fn mods(&self) -> GameMods {
-        self.mods.clone()
-    }
-}
+impl OsuDifficultyCalculator {}
 
 impl Drop for OsuDifficultyCalculator {
     fn drop(&mut self) {
@@ -56,6 +52,10 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
             ruleset,
             mods: GameMods::default(),
         })
+    }
+
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
     }
 
     fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {

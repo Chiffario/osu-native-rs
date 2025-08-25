@@ -1,7 +1,7 @@
 use crate::{
     beatmap::Beatmap,
     error::OsuError,
-    mods::{GameModsError, IntoGameMods},
+    mods::{GameMods, GameModsError, IntoGameMods},
     ruleset::Ruleset,
     utils::HasNative,
 };
@@ -16,6 +16,7 @@ pub trait DifficultyCalculator: Sized {
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError>;
 
+    fn mods(&self) -> GameMods;
     fn with_mods(self, mods: impl IntoGameMods) -> Result<Self, GameModsError>;
 
     fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError>;

@@ -25,12 +25,6 @@ pub struct ManiaDifficultyCalculator {
     mods: GameMods,
 }
 
-impl ManiaDifficultyCalculator {
-    pub fn mods(&self) -> GameMods {
-        self.mods.clone()
-    }
-}
-
 impl Drop for ManiaDifficultyCalculator {
     fn drop(&mut self) {
         unsafe { ManiaDifficultyCalculator_Destroy(self.handle) };
@@ -56,6 +50,10 @@ impl DifficultyCalculator for ManiaDifficultyCalculator {
             ruleset,
             mods: GameMods::default(),
         })
+    }
+
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
     }
 
     fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
