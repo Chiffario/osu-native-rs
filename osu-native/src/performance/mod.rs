@@ -113,20 +113,8 @@ pub struct CalculatorBuilder<T> {
     _marker: PhantomData<T>,
 }
 
-impl CalculatorBuilder<Empty> {
-    pub fn new() -> CalculatorBuilder<Empty> {
-        CalculatorBuilder::<Empty> {
-            beatmap: None,
-            ruleset: None,
-            mods: None,
-            _marker: PhantomData::<Empty>,
-        }
-    }
-}
-
-impl CalculatorBuilder<Empty> {
-    pub fn with_beatmap(
-        self,
+impl CalculatorBuilder<WithBeatmap> {
+    pub fn from_path(
         map: impl AsRef<Path>,
     ) -> Result<CalculatorBuilder<WithBeatmap>, BeatmapError> {
         let beatmap = Beatmap::from_path(map)?;
@@ -299,9 +287,8 @@ impl PerformanceCalculatorBuilder<Mania> {
     }
 }
 impl PerformanceCalculatorBuilder<Catch> {
-    fn n300(mut self, n: i32) -> Self {
-        self.score_state.count_great = n;
-        self
+    implement_setter! {
+        hits -> count_great,
     }
 }
 
@@ -315,16 +302,14 @@ mod tests {
 
     #[test]
     fn test_typestate() -> Result<(), Box<dyn std::error::Error>> {
-        let calc = CalculatorBuilder::new()
-            .with_beatmap(initialize_path())?
+        let calc = CalculatorBuilder::from_path(initialize_path())?
             .osu()?
             .mods(vec![])?
             .difficulty()?
             .calculate()?;
         assert!(calc.star_rating > 0.0);
         assert_eq!(calc.max_combo, 719);
-        let calc = CalculatorBuilder::new()
-            .with_beatmap(initialize_path())?
+        let calc = CalculatorBuilder::from_path(initialize_path())?
             .osu()?
             .mods(vec![])?
             .performance()?
