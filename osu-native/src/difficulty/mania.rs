@@ -138,19 +138,17 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
+        generate_diffcalc_field_tests,
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
-    #[test]
-    fn test_toy_box_convert_mania() {
-        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Mania).unwrap();
-        let calculator = ManiaDifficultyCalculator::new(ruleset, &beatmap).unwrap();
-        let attributes = calculator.calculate().unwrap();
-        assert_ne!(attributes.star_rating, 0.0);
-        assert_eq!(attributes.max_combo, 1463);
+    generate_diffcalc_field_tests! {
+        "mania",
+        star_rating!,
+        max_combo == 1463
     }
+
     #[test]
     fn test_toy_box_mania_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();

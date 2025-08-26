@@ -100,28 +100,21 @@ impl Beatmap {
 #[cfg(test)]
 mod tests {
     use crate::utils::initialize_path;
+    use crate::{generate_beatmap_field_tests, generate_beatmap_method_tests};
 
     use super::Beatmap;
-
-    #[test]
-    fn test_create_map_from_path() {
-        let map = Beatmap::from_path(initialize_path()).unwrap();
-        assert_eq!(map.approach_rate, 9.2);
-        assert_eq!(map.overall_difficulty, 8.3);
-        assert_eq!(map.drain_rate, 5.0);
-        assert_eq!(map.circle_size, 4.0);
-        assert_eq!(map.slider_multiplier, 2.0);
-        assert_eq!(map.slider_tick_rate, 1.0);
+    generate_beatmap_field_tests! {
+        approach_rate == 9.2,
+        overall_difficulty == 8.3,
+        drain_rate == 5.0,
+        circle_size == 4.0,
+        slider_multiplier == 2.0,
+        slider_tick_rate == 1.0,
     }
 
-    #[test]
-    fn test_get_strings() {
-        let map = Beatmap::from_path(initialize_path()).unwrap();
-        let title = map.title().unwrap();
-        assert_eq!(title, "Toy Box");
-        let artist = map.artist().unwrap();
-        assert_eq!(artist, "John Grant");
-        let version = map.version().unwrap();
-        assert_eq!(version, "Expert");
+    generate_beatmap_method_tests! {
+        title() == "Toy Box",
+        artist() == "John Grant",
+        version() == "Expert",
     }
 }

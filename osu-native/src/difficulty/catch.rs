@@ -138,18 +138,16 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, catch::CatchDifficultyCalculator},
+        generate_diffcalc_field_tests,
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
-    #[test]
-    fn test_toy_box_convert_catch() {
-        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Catch).unwrap();
-        let calculator = CatchDifficultyCalculator::new(ruleset, &beatmap).unwrap();
-        let attributes = calculator.calculate().unwrap();
-        assert_ne!(attributes.star_rating, 0.0);
-        assert_eq!(attributes.max_combo, 717);
+    generate_diffcalc_field_tests! {
+        "catch",
+        star_rating!,
+        max_combo == 717
+
     }
     #[test]
     fn test_toy_box_catch_with_mods() {

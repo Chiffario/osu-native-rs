@@ -181,25 +181,22 @@ mod tests {
         utils::initialize_path,
     };
 
-    #[test]
-    fn test_toy_box_osu() {
-        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let calculator = OsuDifficultyCalculator::new(ruleset, &beatmap).unwrap();
-        let attributes = calculator.calculate().unwrap();
-        assert_ne!(attributes.star_rating, 0.0);
-        assert_eq!(attributes.max_combo, 719);
-        assert_eq!(attributes.flashlight_difficulty, 0.0);
-        assert_ne!(attributes.aim_difficulty, 0.0);
-        assert_ne!(attributes.aim_difficulty_slider_count, 0.0);
-        assert_ne!(attributes.speed_difficulty, 0.0);
-        assert_ne!(attributes.speed_note_count, 0.0);
-        assert_ne!(attributes.slider_factor, 0.0);
-        assert_ne!(attributes.aim_difficult_strain_count, 0.0);
-        assert_ne!(attributes.speed_difficult_strain_count, 0.0);
-        assert_ne!(attributes.hit_circle_count, 0);
-        assert_ne!(attributes.slider_count, 0);
-        assert_ne!(attributes.spinner_count, 0);
+    use crate::generate_diffcalc_field_tests;
+
+    generate_diffcalc_field_tests! {
+        "osu",
+        star_rating!,
+        max_combo == 719,
+        flashlight_difficulty == 0.0,
+        aim_difficulty!,
+        aim_difficulty_slider_count!,
+        speed_difficulty!,
+        speed_note_count!,
+        slider_factor!,
+        aim_difficult_strain_count!,
+        speed_difficult_strain_count!,
+        hit_circle_count == 343,
+        slider_count == 177,
     }
 
     #[test]

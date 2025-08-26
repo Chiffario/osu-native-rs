@@ -8,6 +8,9 @@ use thiserror::Error as ThisError;
 
 use crate::error::NativeError;
 
+#[cfg(test)]
+pub mod test_macros;
+
 /// Convenience alias for the native type of `T`.
 pub type NativeType<T> = <T as HasNative>::Native;
 

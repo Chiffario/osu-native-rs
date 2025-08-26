@@ -163,27 +163,25 @@ mod tests {
     use crate::{
         beatmap::Beatmap,
         difficulty::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
+        generate_diffcalc_field_tests,
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
 
-    #[test]
-    fn test_toy_box_convert_taiko() {
-        let beatmap = Beatmap::from_path(initialize_path()).unwrap();
-        let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
-        let calculator = TaikoDifficultyCalculator::new(ruleset, &beatmap).unwrap();
-        let attributes = calculator.calculate().unwrap();
-        assert_ne!(attributes.star_rating, 0.0);
-        assert_eq!(attributes.max_combo, 709);
-        // assert_eq!(attributes.rhythm_difficulty, 0.6085760732532105);
-        // assert_eq!(attributes.reading_difficulty, 0.0);
-        // assert_eq!(attributes.colour_difficulty, 0.0);
-        // assert_eq!(attributes.stamina_difficulty, 0.0);
-        assert_ne!(attributes.mono_stamina_factor, 0.0);
-        // assert_eq!(attributes.rhythm_top_strains, 0.0);
-        // assert_eq!(attributes.colour_top_strains, 0.0);
-        // assert_eq!(attributes.stamina_top_strains, 0.0);
+    generate_diffcalc_field_tests! {
+        "taiko",
+        star_rating!,
+        max_combo == 709,
+        rhythm_difficulty!,
+        reading_difficulty!,
+        colour_difficulty!,
+        stamina_difficulty!,
+        mono_stamina_factor!,
+        rhythm_top_strains!,
+        colour_top_strains!,
+        stamina_top_strains!,
     }
+
     #[test]
     fn test_toy_box_taiko_with_mods() {
         let beatmap = Beatmap::from_path(initialize_path()).unwrap();
