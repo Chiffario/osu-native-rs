@@ -1,7 +1,7 @@
 use libosu_native_sys::ErrorCode;
 use thiserror::Error as ThisError;
 
-use crate::mods::native::ModError;
+use crate::mods::native::{ModCollectionError, ModError};
 
 #[derive(Debug, ThisError)]
 pub enum NativeError {
@@ -36,6 +36,8 @@ pub enum OsuError {
     LogicError,
     #[error("GameMod error")]
     Mods(#[from] ModError),
+    #[error("Mod collection error")]
+    ModCollection(#[from] ModCollectionError),
     #[error("Native error")]
     NativeError(#[from] NativeError),
     #[error("Unknown error")]

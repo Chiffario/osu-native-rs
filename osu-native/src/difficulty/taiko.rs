@@ -32,7 +32,7 @@ impl Drop for TaikoDifficultyCalculator {
 }
 
 impl DifficultyCalculator for TaikoDifficultyCalculator {
-    type Attributes = TaikoDifficultyAttributes;
+    type DifficultyAttributes = TaikoDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -52,13 +52,17 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
         })
     }
 
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+
+    fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
 
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
         let mods_vec = self
@@ -98,9 +102,10 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
     }
 }
 
+#[derive(Debug)]
 pub struct TaikoDifficultyAttributes {
     pub star_rating: f64,
-    pub max_combo: usize,
+    pub max_combo: i32,
     pub rhythm_difficulty: f64,
     pub reading_difficulty: f64,
     pub colour_difficulty: f64,
@@ -119,7 +124,7 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
     fn from(value: NativeTaikoDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
             rhythm_difficulty: value.rhythm_difficulty,
             reading_difficulty: value.reading_difficulty,
             colour_difficulty: value.colour_difficulty,
@@ -132,6 +137,23 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
     }
 }
 
+impl From<&TaikoDifficultyAttributes> for NativeTaikoDifficultyAttributes {
+    fn from(val: &TaikoDifficultyAttributes) -> Self {
+        NativeTaikoDifficultyAttributes {
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+            rhythm_difficulty: val.rhythm_difficulty,
+            reading_difficulty: val.reading_difficulty,
+            colour_difficulty: val.colour_difficulty,
+            stamina_difficulty: val.stamina_difficulty,
+            mono_stamina_factor: val.mono_stamina_factor,
+            rhythm_top_strains: val.rhythm_top_strains,
+            colour_top_strains: val.colour_top_strains,
+            stamina_top_strains: val.stamina_top_strains,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -140,7 +162,7 @@ mod tests {
 
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
+        difficulty::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
@@ -176,7 +198,7 @@ mod tests {
         let ruleset = Ruleset::new(RulesetKind::Taiko).unwrap();
         let calculator_with_mods = TaikoDifficultyCalculator::new(ruleset, &beatmap)
             .unwrap()
-            .mods(vec![mods])
+            .with_mods(vec![mods])
             .unwrap();
         let attributes_with_mods = calculator_with_mods.calculate().unwrap();
 

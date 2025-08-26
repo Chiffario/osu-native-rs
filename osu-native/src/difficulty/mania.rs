@@ -32,7 +32,7 @@ impl Drop for ManiaDifficultyCalculator {
 }
 
 impl DifficultyCalculator for ManiaDifficultyCalculator {
-    type Attributes = ManiaDifficultyAttributes;
+    type DifficultyAttributes = ManiaDifficultyAttributes;
 
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
@@ -52,13 +52,17 @@ impl DifficultyCalculator for ManiaDifficultyCalculator {
         })
     }
 
-    fn mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
+    fn mods(&self) -> GameMods {
+        self.mods.clone()
+    }
+
+    fn with_mods(mut self, mods: impl IntoGameMods) -> Result<Self, GameModsError> {
         self.mods = mods.into_mods()?;
 
         Ok(self)
     }
 
-    fn calculate(&self) -> Result<Self::Attributes, OsuError> {
+    fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
         let mods_vec = self
@@ -98,20 +102,29 @@ impl DifficultyCalculator for ManiaDifficultyCalculator {
     }
 }
 
+#[derive(Debug)]
+pub struct ManiaDifficultyAttributes {
+    pub star_rating: f64,
+    pub max_combo: i32,
+}
+
 impl From<NativeManiaDifficultyAttributes> for ManiaDifficultyAttributes {
     fn from(value: NativeManiaDifficultyAttributes) -> Self {
         Self {
             star_rating: value.star_rating,
-            max_combo: value.max_combo as usize,
+            max_combo: value.max_combo,
         }
     }
 }
 
-pub struct ManiaDifficultyAttributes {
-    pub star_rating: f64,
-    pub max_combo: usize,
+impl From<&ManiaDifficultyAttributes> for NativeManiaDifficultyAttributes {
+    fn from(val: &ManiaDifficultyAttributes) -> Self {
+        NativeManiaDifficultyAttributes {
+            star_rating: val.star_rating,
+            max_combo: val.max_combo,
+        }
+    }
 }
-
 impl HasNative for ManiaDifficultyAttributes {
     type Native = NativeManiaDifficultyAttributes;
 }
@@ -124,7 +137,7 @@ mod tests {
 
     use crate::{
         beatmap::Beatmap,
-        calculator::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
+        difficulty::{DifficultyCalculator, mania::ManiaDifficultyCalculator},
         ruleset::{Ruleset, RulesetKind},
         utils::initialize_path,
     };
@@ -151,7 +164,7 @@ mod tests {
         };
         let calculator_with_mods = ManiaDifficultyCalculator::new(ruleset, &beatmap)
             .unwrap()
-            .mods(vec![mods])
+            .with_mods(vec![mods])
             .unwrap();
         let attributes_with_mods = calculator_with_mods.calculate().unwrap();
 
