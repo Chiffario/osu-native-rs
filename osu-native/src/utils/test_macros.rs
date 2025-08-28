@@ -10,6 +10,12 @@ macro_rules! generate_ruleset_tests {
             }
 
             #[test]
+            fn [<test_create_ $variant:lower _from_string>]() {
+                let ruleset = Ruleset::from_short_name($expected_name.to_string()).unwrap();
+                assert_eq!(ruleset.kind, RulesetKind::$variant);
+            }
+
+            #[test]
             fn [<test_get_name_ $variant:lower>]() {
                 let ruleset = Ruleset::new(RulesetKind::$variant).unwrap();
                 assert_eq!(ruleset.short_name().unwrap(), $expected_name);

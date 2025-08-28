@@ -73,3 +73,11 @@ pub fn initialize_path() -> std::path::PathBuf {
 
     path
 }
+#[cfg(doctest)]
+pub fn initialize_path() -> std::path::PathBuf {
+    let manifest_path = std::env!("CARGO_MANIFEST_DIR");
+    let mut path = std::path::PathBuf::from(manifest_path);
+    path.push("standard.osu");
+
+    path
+}

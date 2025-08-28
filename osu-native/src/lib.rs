@@ -4,4 +4,4 @@ pub mod error;
 pub mod mods;
 pub mod performance;
 pub mod ruleset;
-mod utils;
+pub mod utils;

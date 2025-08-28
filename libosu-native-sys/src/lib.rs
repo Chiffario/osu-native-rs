@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::fmt::Debug;
+use std::{ffi::c_char, fmt::Debug};
 #[repr(C)]
 pub struct NativeOsuDifficultyAttributes {
     pub star_rating: f64,
@@ -165,8 +165,9 @@ impl<T: Debug> From<NativeNullable<T>> for Option<T> {
 )]
 unsafe extern "C" {
     // Mods
-    pub fn Mod_Create(acronym: *const i8, mod_handle_ptr: *mut NativeModHandle) -> ErrorCode;
-    pub fn Mod_SetSetting(mod_handle: NativeModHandle, key: *const i8, value: f64) -> ErrorCode;
+    pub fn Mod_Create(acronym: *const c_char, mod_handle_ptr: *mut NativeModHandle) -> ErrorCode;
+    pub fn Mod_SetSetting(mod_handle: NativeModHandle, key: *const c_char, value: f64)
+    -> ErrorCode;
     pub fn Mod_Debug(mod_handle: NativeModHandle) -> ErrorCode;
     pub fn Mod_Destroy(mod_handle: NativeModHandle) -> ErrorCode;
     // Mod collections
@@ -186,7 +187,7 @@ unsafe extern "C" {
         ruleset_handle_ptr: *mut NativeRuleset,
     ) -> ErrorCode;
     pub fn Ruleset_CreateFromShortName(
-        short_name: *const u8,
+        short_name: *const c_char,
         ruleset_handle_ptr: *mut NativeRuleset,
     ) -> ErrorCode;
     pub fn Ruleset_GetShortName(
@@ -196,8 +197,14 @@ unsafe extern "C" {
     ) -> ErrorCode;
     pub fn Ruleset_Destroy(ruleset_handle: NativeRulesetHandle) -> ErrorCode;
     // Beatmaps
-    pub fn Beatmap_CreateFromFile(path: *const i8, beatmap_ptr: *mut NativeBeatmap) -> ErrorCode;
-    pub fn Beatmap_CreateFromText(text: *const i8, beatmap_ptr: *mut NativeBeatmap) -> ErrorCode;
+    pub fn Beatmap_CreateFromFile(
+        path: *const c_char,
+        beatmap_ptr: *mut NativeBeatmap,
+    ) -> ErrorCode;
+    pub fn Beatmap_CreateFromText(
+        text: *const c_char,
+        beatmap_ptr: *mut NativeBeatmap,
+    ) -> ErrorCode;
     pub fn Beatmap_GetTitle(
         beatmap_handle: NativeBeatmapHandle,
         buffer: *mut u8,
