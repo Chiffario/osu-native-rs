@@ -7,7 +7,7 @@ Note: This is *raw* completeness, aka API coverage of osu-native. Not "idiomatic
 | Native function                         | Is wrapped |
 | --------------------------------------- | ---------- |
 | Beatmap_CreateFromFile                  |      +     |
-| Beatmap_CreateFromText                  |      -     |
+| Beatmap_CreateFromText                  |      +     |
 | Beatmap_Destroy                         |      +     |
 | Beatmap_GetTitle                        |      +     |
 | Beatmap_GetArtist                       |      +     |
