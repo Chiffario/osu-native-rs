@@ -36,6 +36,25 @@ impl Drop for OsuDifficultyCalculator {
 impl DifficultyCalculator for OsuDifficultyCalculator {
     type DifficultyAttributes = OsuDifficultyAttributes;
 
+    /// Create an instance of [`OsuDifficultyCalculator`]
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use osu_native::{
+    /// #     ruleset::{Ruleset, RulesetKind},
+    /// #     beatmap::Beatmap,
+    /// #     difficulty::{DifficultyCalculator, osu::OsuDifficultyCalculator},
+    /// # };
+    /// # let get_map = || "../../standard.osu";
+    /// let beatmap = Beatmap::from_path(get_map())?;
+    /// let ruleset = Ruleset::new(RulesetKind::Osu)?;
+    /// let osu_calc = OsuDifficultyCalculator::new(ruleset, &beatmap)?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// # Errors
+    ///
+    /// Returns [`OsuError::NativeError`] if osu-native returns an error
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
 
@@ -64,6 +83,25 @@ impl DifficultyCalculator for OsuDifficultyCalculator {
         Ok(self)
     }
 
+    /// Calculates [`OsuDifficultyAttributes`]
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use osu_native::{
+    /// #     ruleset::{Ruleset, RulesetKind},
+    /// #     beatmap::Beatmap,
+    /// #     difficulty::{DifficultyCalculator, osu::OsuDifficultyCalculator},
+    /// # };
+    /// # let beatmap = Beatmap::from_path("../../standard.osu")?;
+    /// # let ruleset = Ruleset::new(RulesetKind::Mania)?;
+    /// let osu_calc = OsuDifficultyCalculator::new(ruleset, &beatmap)?;
+    /// let attributes = osu_calc.calculate()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// # Errors
+    ///
+    /// Returns [`OsuError::NativeError`] if osu-native returns an error
     fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mod_collection = ModCollection::new()?;
 

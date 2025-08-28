@@ -7,7 +7,7 @@ use rosu_mods::{GameModSimple, GameMods as GameModsLazer, GameModsIntermode, Gam
 use serde_json::Error as JsonError;
 use thiserror::Error as ThisError;
 
-pub(crate) mod native;
+pub mod native;
 
 #[derive(Clone, PartialEq)]
 pub struct GameMods(pub(crate) Vec<GameModSimple>);

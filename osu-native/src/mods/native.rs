@@ -16,7 +16,7 @@ use crate::{
     mods::{GameModsError, IntoGameMods},
 };
 
-pub(crate) struct ModCollection {
+pub struct ModCollection {
     pub handle: NativeModCollectionHandle,
     mods: Vec<Mod>,
 }
@@ -36,6 +36,17 @@ impl ModCollection {
         self.handle
     }
 
+    /// Creates an instance of [`ModCollection`]
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use osu_native::mods::native::ModCollection;
+    /// let mods = ModCollection::new()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    ///
+    /// # Errors
+    /// Returns [`NativeError`] if osu-native returns an error
     pub fn new() -> Result<Self, NativeError> {
         let mut collection = MaybeUninit::uninit();
 
@@ -93,8 +104,8 @@ impl Drop for ModCollection {
     }
 }
 
-pub(crate) struct Mod {
-    pub handle: NativeModHandle,
+pub struct Mod {
+    handle: NativeModHandle,
 }
 
 #[derive(Debug, ThisError)]

@@ -11,6 +11,8 @@ use crate::{
     utils::{HasNative, NativeType, StringError, read_native_string},
 };
 
+/// osu! Beatmap. Contains general ruleset-independent attributes
+/// Also contains methods for getting extra data
 pub struct Beatmap {
     handle: i32,
     pub approach_rate: f32,
@@ -29,6 +31,7 @@ impl Beatmap {
 
 impl Drop for Beatmap {
     fn drop(&mut self) {
+        // Ensure resources are freed on osu-native's side
         unsafe { Beatmap_Destroy(self.handle) };
     }
 }
@@ -66,6 +69,20 @@ impl From<ErrorCode> for BeatmapError {
 }
 
 impl Beatmap {
+    /// Creates a new [`Beatmap`] from a path to a .osu file
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use osu_native::beatmap::Beatmap;
+    /// # let get_path = || "../../standard.osu";
+    /// let path = get_path();
+    /// let beatmap = Beatmap::from_path(path).unwrap();
+    /// println!("{}", beatmap.approach_rate);
+    /// ```
+    ///
+    /// # Errors
+    /// Returns a [`BeatmapError::PathError`] if the path can't be correctly converted to [`CString`]
+    /// Returns a [`BeatmapError::NativeError`] if there is an error on osu-native's side
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BeatmapError> {
         let Some(Ok(path_cstr)) = path.as_ref().to_str().map(CString::new) else {
             return Err(BeatmapError::PathError);
@@ -84,14 +101,53 @@ impl Beatmap {
         Ok(native.into())
     }
 
+    /// Creates a [`String`] with beatmap's romanized title by fetching it from osu-native
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use osu_native::beatmap::Beatmap;
+    /// # let path = "../../standard.osu";
+    /// # let beatmap = Beatmap::from_path(path).unwrap();
+    /// let title = beatmap.title().unwrap();
+    /// println!("{title}");
+    /// ```
+    ///
+    /// # Errors
+    /// See [`read_native_string()`]
     pub fn title(&self) -> Result<String, StringError> {
         read_native_string(self.handle, Beatmap_GetTitle)
     }
 
+    /// Creates a [`String`] with beatmap's romanized artist name by fetching it from osu-native
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use osu_native::beatmap::Beatmap;
+    /// # let path = "../../standard.osu";
+    /// # let beatmap = Beatmap::from_path(path).unwrap();
+    /// let title = beatmap.artist().unwrap();
+    /// println!("{title}");
+    /// ```
+    ///
+    /// # Errors
+    /// See [`read_native_string()`]
     pub fn artist(&self) -> Result<String, StringError> {
         read_native_string(self.handle, Beatmap_GetArtist)
     }
 
+    /// Creates a [`String`] with beatmap's difficulty name by fetching it from osu-native
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use osu_native::beatmap::Beatmap;
+    /// # let path = "../../standard.osu";
+    /// # let beatmap = Beatmap::from_path(path).unwrap();
+    /// let title = beatmap.version().unwrap();
+    /// println!("{title}");
+    /// ```
+    ///
+    /// # Errors
+    /// See [`read_native_string()`]
     pub fn version(&self) -> Result<String, StringError> {
         read_native_string(self.handle, Beatmap_GetVersion)
     }

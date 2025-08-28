@@ -34,6 +34,25 @@ impl Drop for TaikoDifficultyCalculator {
 impl DifficultyCalculator for TaikoDifficultyCalculator {
     type DifficultyAttributes = TaikoDifficultyAttributes;
 
+    /// Create an instance of [`TaikoDifficultyCalculator`]
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use osu_native::{
+    /// #     ruleset::{Ruleset, RulesetKind},
+    /// #     beatmap::Beatmap,
+    /// #     difficulty::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
+    /// # };
+    /// # let get_map = || "../../standard.osu";
+    /// let beatmap = Beatmap::from_path(get_map())?;
+    /// let ruleset = Ruleset::new(RulesetKind::Taiko)?;
+    /// let taiko_calc = TaikoDifficultyCalculator::new(ruleset, &beatmap)?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// # Errors
+    ///
+    /// Returns [`OsuError::NativeError`] if osu-native returns an error
     fn new(ruleset: Ruleset, beatmap: &Beatmap) -> Result<Self, OsuError> {
         let mut handle = 0;
 
@@ -62,6 +81,25 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
         Ok(self)
     }
 
+    /// Calculates [`TaikoDifficultyAttributes`]
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use osu_native::{
+    /// #     ruleset::{Ruleset, RulesetKind},
+    /// #     beatmap::Beatmap,
+    /// #     difficulty::{DifficultyCalculator, taiko::TaikoDifficultyCalculator},
+    /// # };
+    /// # let beatmap = Beatmap::from_path("../../standard.osu")?;
+    /// # let ruleset = Ruleset::new(RulesetKind::Mania)?;
+    /// let taiko_calc = TaikoDifficultyCalculator::new(ruleset, &beatmap)?;
+    /// let attributes = taiko_calc.calculate()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    /// # Errors
+    ///
+    /// Returns [`OsuError::NativeError`] if osu-native returns an error
     fn calculate(&self) -> Result<Self::DifficultyAttributes, OsuError> {
         let mods = ModCollection::new()?;
 
