@@ -1,8 +1,8 @@
 use std::{ffi::CString, mem::MaybeUninit, path::Path};
 
 use libosu_native_sys::{
-    Beatmap_CreateFromFile, Beatmap_Destroy, Beatmap_GetArtist, Beatmap_GetTitle,
-    Beatmap_GetVersion, ErrorCode, NativeBeatmap,
+    Beatmap_CreateFromFile, Beatmap_CreateFromText, Beatmap_Destroy, Beatmap_GetArtist,
+    Beatmap_GetTitle, Beatmap_GetVersion, ErrorCode, NativeBeatmap,
 };
 use thiserror::Error as ThisError;
 
@@ -56,8 +56,8 @@ impl From<NativeBeatmap> for Beatmap {
 
 #[derive(Debug, ThisError)]
 pub enum BeatmapError {
-    #[error("Specified path is invalid")]
-    PathError,
+    #[error("Specified string is invalid")]
+    StringError,
     #[error("Native error")]
     Native(#[from] NativeError),
 }
@@ -81,16 +81,48 @@ impl Beatmap {
     /// ```
     ///
     /// # Errors
-    /// Returns a [`BeatmapError::PathError`] if the path can't be correctly converted to [`CString`]
+    /// Returns a [`BeatmapError::StringError`] if the path can't be correctly converted to [`CString`]
     /// Returns a [`BeatmapError::NativeError`] if there is an error on osu-native's side
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BeatmapError> {
         let Some(Ok(path_cstr)) = path.as_ref().to_str().map(CString::new) else {
-            return Err(BeatmapError::PathError);
+            return Err(BeatmapError::StringError);
         };
 
         let mut beatmap: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
 
         let code = unsafe { Beatmap_CreateFromFile(path_cstr.as_ptr(), beatmap.as_mut_ptr()) };
+
+        if code != ErrorCode::Success {
+            return Err(code.into());
+        }
+
+        let native = unsafe { beatmap.assume_init() };
+
+        Ok(native.into())
+    }
+
+    /// Creates a new [`Beatmap`] from an .osu file in a [`String`]
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use osu_native::beatmap::Beatmap;
+    /// # let get_path = || "../../standard.osu";
+    /// let path = get_path();
+    /// let beatmap = Beatmap::from_path(path).unwrap();
+    /// println!("{}", beatmap.approach_rate);
+    /// ```
+    ///
+    /// # Errors
+    /// Returns a [`BeatmapError::StringError`] if the path can't be correctly converted to [`CString`]
+    /// Returns a [`BeatmapError::NativeError`] if there is an error on osu-native's side
+    pub fn from_text(string: String) -> Result<Self, BeatmapError> {
+        let Ok(map_cstr) = CString::new(string) else {
+            return Err(BeatmapError::StringError);
+        };
+
+        let mut beatmap: MaybeUninit<NativeType<Self>> = MaybeUninit::uninit();
+
+        let code = unsafe { Beatmap_CreateFromText(map_cstr.as_ptr(), beatmap.as_mut_ptr()) };
 
         if code != ErrorCode::Success {
             return Err(code.into());
@@ -155,6 +187,8 @@ impl Beatmap {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+
     use crate::utils::initialize_path;
     use crate::{generate_beatmap_field_tests, generate_beatmap_method_tests};
 

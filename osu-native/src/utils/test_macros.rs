@@ -35,6 +35,13 @@ macro_rules! generate_beatmap_field_tests {
                     let beatmap = Beatmap::from_path(initialize_path()).unwrap();
                     assert_eq!(beatmap.$field, $expected);
                 }
+
+                #[test]
+                fn [<test_beatmap_from_string $field _equals_expected>]() {
+                    let file = std::io::read_to_string(File::open(initialize_path()).unwrap()).unwrap();
+                    let beatmap = Beatmap::from_text(file).unwrap();
+                    assert_eq!(beatmap.$field, $expected);
+                }
             }
         )*
     };
@@ -49,6 +56,13 @@ macro_rules! generate_beatmap_method_tests {
                 #[test]
                 fn [<test_beatmap_ $method _equals_expected>]() {
                     let beatmap = Beatmap::from_path(initialize_path()).unwrap();
+                    assert_eq!(beatmap.$method().unwrap(), $expected);
+                }
+
+                #[test]
+                fn [<test_beatmap_from_string $method _equals_expected>]() {
+                    let file = std::io::read_to_string(File::open(initialize_path()).unwrap()).unwrap();
+                    let beatmap = Beatmap::from_text(file).unwrap();
                     assert_eq!(beatmap.$method().unwrap(), $expected);
                 }
             }
