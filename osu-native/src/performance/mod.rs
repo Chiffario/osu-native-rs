@@ -80,18 +80,28 @@ pub struct Mania;
 pub struct Catch;
 pub trait RulesetTrait {
     type PerformanceCalculatorTy: PerformanceCalculator;
+    type DifficultyCalculatorTy: DifficultyCalculator;
+    const KIND: RulesetKind;
 }
 impl RulesetTrait for Osu {
     type PerformanceCalculatorTy = OsuPerformanceCalculator;
+    type DifficultyCalculatorTy = OsuDifficultyCalculator;
+    const KIND: RulesetKind = RulesetKind::Osu;
 }
 impl RulesetTrait for Taiko {
     type PerformanceCalculatorTy = TaikoPerformanceCalculator;
+    type DifficultyCalculatorTy = TaikoDifficultyCalculator;
+    const KIND: RulesetKind = RulesetKind::Taiko;
 }
 impl RulesetTrait for Mania {
     type PerformanceCalculatorTy = ManiaPerformanceCalculator;
+    type DifficultyCalculatorTy = ManiaDifficultyCalculator;
+    const KIND: RulesetKind = RulesetKind::Mania;
 }
 impl RulesetTrait for Catch {
     type PerformanceCalculatorTy = CatchPerformanceCalculator;
+    type DifficultyCalculatorTy = CatchDifficultyCalculator;
+    const KIND: RulesetKind = RulesetKind::Catch;
 }
 pub struct WithRuleset<T: RulesetTrait> {
     _marker: PhantomData<T>,
@@ -114,10 +124,18 @@ pub struct CalculatorBuilder<T> {
 }
 
 impl CalculatorBuilder<WithBeatmap> {
-    pub fn from_path(
-        map: impl AsRef<Path>,
-    ) -> Result<CalculatorBuilder<WithBeatmap>, BeatmapError> {
+    pub fn from_path(map: impl AsRef<Path>) -> Result<Self, BeatmapError> {
         let beatmap = Beatmap::from_path(map)?;
+        Ok(CalculatorBuilder {
+            beatmap: Some(beatmap),
+            ruleset: None,
+            mods: None,
+            _marker: PhantomData::<WithBeatmap>,
+        })
+    }
+
+    pub fn from_text(string: String) -> Result<Self, BeatmapError> {
+        let beatmap = Beatmap::from_text(string)?;
         Ok(CalculatorBuilder {
             beatmap: Some(beatmap),
             ruleset: None,
@@ -128,9 +146,9 @@ impl CalculatorBuilder<WithBeatmap> {
 }
 
 macro_rules! implement_ruleset {
-    ($name:ident, $ruleset:expr, $ty:ident) => {
+    ($name:ident, $ty:ident) => {
         fn $name(self) -> Result<CalculatorBuilder<WithRuleset<$ty>>, RulesetError> {
-            let ruleset = Ruleset::new($ruleset)?;
+            let ruleset = Ruleset::new($ty::KIND)?;
             Ok(CalculatorBuilder {
                 beatmap: self.beatmap,
                 ruleset: Some(ruleset),
@@ -142,10 +160,10 @@ macro_rules! implement_ruleset {
 }
 
 impl CalculatorBuilder<WithBeatmap> {
-    implement_ruleset!(osu, RulesetKind::Osu, Osu);
-    implement_ruleset!(taiko, RulesetKind::Taiko, Taiko);
-    implement_ruleset!(mania, RulesetKind::Mania, Mania);
-    implement_ruleset!(catch, RulesetKind::Catch, Catch);
+    implement_ruleset!(osu, Osu);
+    implement_ruleset!(taiko, Taiko);
+    implement_ruleset!(mania, Mania);
+    implement_ruleset!(catch, Catch);
 }
 
 impl<T> CalculatorBuilder<WithRuleset<T>>
@@ -169,9 +187,9 @@ trait Difficulty {
 }
 
 macro_rules! implement_difficulty {
-    ($calc:ty, $ruleset:ty) => {
+    ($ruleset:ty) => {
         impl Difficulty for CalculatorBuilder<WithRuleset<$ruleset>> {
-            type Calculator = $calc;
+            type Calculator = <$ruleset as RulesetTrait>::DifficultyCalculatorTy;
             type RulesetType = $ruleset;
 
             fn difficulty(self) -> Result<Self::Calculator, OsuError> {
@@ -199,10 +217,10 @@ macro_rules! implement_difficulty {
     };
 }
 
-implement_difficulty!(OsuDifficultyCalculator, Osu);
-implement_difficulty!(TaikoDifficultyCalculator, Taiko);
-implement_difficulty!(ManiaDifficultyCalculator, Mania);
-implement_difficulty!(CatchDifficultyCalculator, Catch);
+implement_difficulty!(Osu);
+implement_difficulty!(Taiko);
+implement_difficulty!(Mania);
+implement_difficulty!(Catch);
 
 impl<T: RulesetTrait> PerformanceCalculatorBuilder<T> {
     fn with_score_state(mut self, score: ScoreStatistics) -> Self {
