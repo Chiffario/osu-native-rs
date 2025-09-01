@@ -32,7 +32,11 @@ impl PerformanceCalculator for CatchPerformanceCalculator {
 
     type Attributes = CatchPerformanceAttributes;
 
-    fn new() -> Result<Self, crate::error::OsuError> {
+    /// Create an instance of [`CatchPerformanceCalculator`]
+    ///
+    /// # Errors
+    /// Returns an [`NativeError`] if osu-native errors
+    fn new() -> Result<Self, crate::error::NativeError> {
         let mut handle = 0;
 
         let code = unsafe { CatchPerformanceCalculator_Create(&mut handle) };
@@ -44,6 +48,13 @@ impl PerformanceCalculator for CatchPerformanceCalculator {
         Ok(Self { handle })
     }
 
+    /// Calculate Catch performance attributes
+    ///
+    /// Creates an instance of [`CatchPerformanceAttributes`] based on the map and mods provided
+    ///
+    /// # Errors
+    /// Returns an [`OsuError::ModCollectionError`] if conversion of [`mods`] to [`ModCollection`] fails
+    /// Returns an [`OsuError::NativeError`] if osu-native errors
     fn calculate(
         &self,
         ruleset: &Ruleset,

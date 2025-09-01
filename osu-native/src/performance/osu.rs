@@ -32,7 +32,7 @@ impl PerformanceCalculator for OsuPerformanceCalculator {
 
     type Attributes = OsuPerformanceAttributes;
 
-    fn new() -> Result<Self, crate::error::OsuError> {
+    fn new() -> Result<Self, crate::error::NativeError> {
         let mut handle = 0;
 
         let code = unsafe { OsuPerformanceCalculator_Create(&mut handle) };

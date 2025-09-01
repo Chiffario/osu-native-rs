@@ -32,7 +32,7 @@ impl PerformanceCalculator for ManiaPerformanceCalculator {
 
     type Attributes = ManiaPerformanceAttributes;
 
-    fn new() -> Result<Self, crate::error::OsuError> {
+    fn new() -> Result<Self, crate::error::NativeError> {
         let mut handle = 0;
 
         let code = unsafe { ManiaPerformanceCalculator_Create(&mut handle) };

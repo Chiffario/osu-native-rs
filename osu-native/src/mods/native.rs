@@ -32,10 +32,6 @@ pub enum ModCollectionError {
 }
 
 impl ModCollection {
-    pub fn handle(&self) -> NativeModCollectionHandle {
-        self.handle
-    }
-
     /// Creates an instance of [`ModCollection`]
     ///
     /// # Example
@@ -64,6 +60,18 @@ impl ModCollection {
         })
     }
 
+    /// Get the native handle of the ModCollection
+    pub fn handle(&self) -> NativeModCollectionHandle {
+        self.handle
+    }
+
+    /// Add a collection of [`GameMods`] to self
+    ///
+    /// # Errors
+    /// Returns a [`ModCollectionError::NativeError`] if osu-native errors
+    /// Returns a [`ModCollectionError::GameModsError`] if ser/de fails
+    /// Returns a [`ModCollectionError::ModError`] if individual mods fail
+    /// ModError bails early but doesn't return the collection to initial state
     pub fn with_game_mods(
         mut self,
         gamemods: impl IntoGameMods,
@@ -87,6 +95,10 @@ impl ModCollection {
         Ok(self)
     }
 
+    /// Add a [`Mod`] to self
+    ///
+    /// # Errors
+    /// Returns a [`NativeError`] if osu-native errors
     pub fn add(&self, gamemod: &Mod) -> Result<(), NativeError> {
         let code = unsafe { ModsCollection_Add(self.handle, gamemod.handle()) };
 
@@ -123,10 +135,17 @@ impl From<ErrorCode> for ModError {
 }
 
 impl Mod {
+    /// Get the native handle of the Mod
     pub fn handle(&self) -> NativeModHandle {
         self.handle
     }
 
+    /// Creates an instance of [`Mod`]
+    ///
+    /// # Errors
+    /// Returns a [`ModError::Acronym`] if acronym creation fails due to
+    /// an invalid CString
+    /// Returns a [`NativeError`] if osu-native errors
     pub fn new(acronym: &str) -> Result<Self, ModError> {
         let acronym = CString::new(acronym)?;
         let acronym_ptr = acronym.as_ptr();

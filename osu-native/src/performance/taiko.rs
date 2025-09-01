@@ -32,7 +32,7 @@ impl PerformanceCalculator for TaikoPerformanceCalculator {
 
     type Attributes = TaikoPerformanceAttributes;
 
-    fn new() -> Result<Self, crate::error::OsuError> {
+    fn new() -> Result<Self, crate::error::NativeError> {
         let mut handle = 0;
 
         let code = unsafe { TaikoPerformanceCalculator_Create(&mut handle) };

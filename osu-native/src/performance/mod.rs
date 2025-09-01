@@ -28,7 +28,7 @@ pub trait PerformanceCalculator: Sized {
 
     type Attributes: HasNative;
 
-    fn new() -> Result<Self, crate::error::OsuError>;
+    fn new() -> Result<Self, crate::error::NativeError>;
 
     fn calculate(
         &self,

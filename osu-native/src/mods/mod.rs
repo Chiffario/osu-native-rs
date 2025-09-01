@@ -12,6 +12,12 @@ pub mod native;
 #[derive(Clone, PartialEq)]
 pub struct GameMods(pub(crate) Vec<GameModSimple>);
 
+/// Convenience trait to turn a type into [`GameMods`]
+///
+/// Should be useful because using raw native mods is annoying and
+/// very error prone (due to requiring manual verification of setting names).
+/// Implementation over [`GameModsLazer`] and [`GameModsIntermode`] allows for
+/// full rosu-mods integration
 pub trait IntoGameMods {
     fn into_mods(self) -> Result<GameMods, GameModsError>;
 }
