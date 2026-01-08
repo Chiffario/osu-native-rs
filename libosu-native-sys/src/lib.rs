@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::{ffi::c_char, fmt::Debug};
+
 #[repr(C)]
 pub struct NativeOsuDifficultyAttributes {
     pub star_rating: f64,
@@ -11,8 +12,13 @@ pub struct NativeOsuDifficultyAttributes {
     pub speed_note_count: f64,
     pub flashlight_difficulty: f64,
     pub slider_factor: f64,
+    pub aim_top_weighted_slider_factor: f64,
+    pub speed_top_weighted_slider_factor: f64,
     pub aim_difficult_strain_count: f64,
     pub speed_difficult_strain_count: f64,
+    pub nested_score_per_object: f64,
+    pub legacy_score_base_multiplier: f64,
+    pub maximum_legacy_combo_score: f64,
     pub drain_rate: f64,
     pub hit_circle_count: i32,
     pub slider_count: i32,
@@ -29,13 +35,13 @@ pub struct NativeManiaDifficultyAttributes {
 pub struct NativeTaikoDifficultyAttributes {
     pub star_rating: f64,
     pub max_combo: i32,
+    pub mechanical_difficulty: f64,
     pub rhythm_difficulty: f64,
     pub reading_difficulty: f64,
     pub colour_difficulty: f64,
     pub stamina_difficulty: f64,
     pub mono_stamina_factor: f64,
-    pub rhythm_top_strains: f64,
-    pub colour_top_strains: f64,
+    pub consistency_factor: f64,
     pub stamina_top_strains: f64,
 }
 
@@ -112,6 +118,10 @@ pub struct NativeOsuPerformanceAttributes {
     pub flashlight: f64,
     pub effective_miss_count: f64,
     pub speed_deviation: NativeNullable<f64>,
+    pub combo_based_estimated_miss_count: f64,
+    pub score_based_estimated_miss_count: NativeNullable<f64>,
+    pub aim_estimated_slider_breaks: f64,
+    pub speed_estimated_slider_breaks: f64,
 }
 
 #[repr(C)]
@@ -119,7 +129,6 @@ pub struct NativeTaikoPerformanceAttributes {
     pub total: f64,
     pub difficulty: f64,
     pub accuracy: f64,
-    pub effective_miss_count: f64,
     pub estimated_unstable_rate: NativeNullable<f64>,
 }
 

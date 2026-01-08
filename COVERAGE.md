@@ -2,6 +2,11 @@
 
 Note: This is *raw* completeness, aka API coverage of osu-native. Not "idiomatic" coverage, *plain* coverage
 
+Current compliance:
+
+lazer: 2025.1029.0
+osu-native: 37dbd06
+
 ## Beatmap 
 
 | Native function                         | Is wrapped |
@@ -112,4 +117,3 @@ Note: This is *raw* completeness, aka API coverage of osu-native. Not "idiomatic
 | CatchCalculatorCalculator_Create        |      +     |
 | CatchCalculatorCalculator_Calculate     |      +     |
 | CatchCalculatorCalculator_Destroy       |      +     |
-

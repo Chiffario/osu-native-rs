@@ -144,13 +144,13 @@ impl DifficultyCalculator for TaikoDifficultyCalculator {
 pub struct TaikoDifficultyAttributes {
     pub star_rating: f64,
     pub max_combo: i32,
+    pub mechanical_difficulty: f64,
     pub rhythm_difficulty: f64,
     pub reading_difficulty: f64,
     pub colour_difficulty: f64,
     pub stamina_difficulty: f64,
     pub mono_stamina_factor: f64,
-    pub rhythm_top_strains: f64,
-    pub colour_top_strains: f64,
+    pub consistency_factor: f64,
     pub stamina_top_strains: f64,
 }
 
@@ -163,13 +163,13 @@ impl From<NativeTaikoDifficultyAttributes> for TaikoDifficultyAttributes {
         Self {
             star_rating: value.star_rating,
             max_combo: value.max_combo,
+            mechanical_difficulty: value.mechanical_difficulty,
             rhythm_difficulty: value.rhythm_difficulty,
             reading_difficulty: value.reading_difficulty,
             colour_difficulty: value.colour_difficulty,
             stamina_difficulty: value.stamina_difficulty,
             mono_stamina_factor: value.mono_stamina_factor,
-            rhythm_top_strains: value.rhythm_top_strains,
-            colour_top_strains: value.colour_top_strains,
+            consistency_factor: value.consistency_factor,
             stamina_top_strains: value.stamina_top_strains,
         }
     }
@@ -180,13 +180,13 @@ impl From<&TaikoDifficultyAttributes> for NativeTaikoDifficultyAttributes {
         NativeTaikoDifficultyAttributes {
             star_rating: val.star_rating,
             max_combo: val.max_combo,
+            mechanical_difficulty: val.mechanical_difficulty,
             rhythm_difficulty: val.rhythm_difficulty,
             reading_difficulty: val.reading_difficulty,
             colour_difficulty: val.colour_difficulty,
             stamina_difficulty: val.stamina_difficulty,
             mono_stamina_factor: val.mono_stamina_factor,
-            rhythm_top_strains: val.rhythm_top_strains,
-            colour_top_strains: val.colour_top_strains,
+            consistency_factor: val.consistency_factor,
             stamina_top_strains: val.stamina_top_strains,
         }
     }
@@ -215,8 +215,6 @@ mod tests {
         colour_difficulty!,
         stamina_difficulty!,
         mono_stamina_factor!,
-        rhythm_top_strains!,
-        colour_top_strains!,
         stamina_top_strains!,
     }
 

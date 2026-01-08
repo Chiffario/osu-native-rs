@@ -91,7 +91,6 @@ pub struct TaikoPerformanceAttributes {
     pub pp: f64,
     pub difficulty: f64,
     pub accuracy: f64,
-    pub effective_miss_count: f64,
     pub estimated_unstable_rate: Option<f64>,
 }
 
@@ -105,7 +104,6 @@ impl From<NativeTaikoPerformanceAttributes> for TaikoPerformanceAttributes {
             pp: value.total,
             difficulty: value.difficulty,
             accuracy: value.accuracy,
-            effective_miss_count: value.effective_miss_count,
             estimated_unstable_rate: value.estimated_unstable_rate.into(),
         }
     }

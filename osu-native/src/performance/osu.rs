@@ -95,6 +95,10 @@ pub struct OsuPerformanceAttributes {
     pub flashlight: f64,
     pub effective_miss_count: f64,
     pub speed_deviation: Option<f64>,
+    pub combo_based_estimated_miss_count: f64,
+    pub score_based_estimated_miss_count: Option<f64>,
+    pub aim_estimated_slider_breaks: f64,
+    pub speed_estimated_slider_breaks: f64,
 }
 
 impl HasNative for OsuPerformanceAttributes {
@@ -111,6 +115,10 @@ impl From<NativeOsuPerformanceAttributes> for OsuPerformanceAttributes {
             flashlight: value.flashlight,
             effective_miss_count: value.effective_miss_count,
             speed_deviation: value.speed_deviation.into(),
+            combo_based_estimated_miss_count: value.combo_based_estimated_miss_count,
+            score_based_estimated_miss_count: value.score_based_estimated_miss_count.into(),
+            aim_estimated_slider_breaks: value.aim_estimated_slider_breaks,
+            speed_estimated_slider_breaks: value.speed_estimated_slider_breaks,
         }
     }
 }
@@ -207,16 +215,16 @@ mod tests {
             count_large_tick_miss: 0,
         };
 
-        let ruleset = Ruleset::new(RulesetKind::Osu).unwrap();
-        let perfcalc = OsuPerformanceCalculator::new().unwrap();
+        let ruleset = Ruleset::new(RulesetKind::Osu).expect("Ruleset creation never fails");
+        let perfcalc = OsuPerformanceCalculator::new().expect("Perfcalc creation never fails");
         let mods = calculator.mods();
         let ss_attributes = perfcalc
             .calculate(&ruleset, &ss, &beatmap, mods.0, &difficulty_attributes)
-            .unwrap();
+            .expect("performance calculations never fail");
         let mods = calculator.mods();
         let worse_attributes = perfcalc
             .calculate(&ruleset, &worse, &beatmap, mods.0, &difficulty_attributes)
-            .unwrap();
+            .expect("performance calculations never fail");
 
         assert!(ss_attributes.pp > worse_attributes.pp);
     }
