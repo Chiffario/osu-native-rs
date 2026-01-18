@@ -155,11 +155,6 @@ where
 
 impl<T: Debug> From<NativeNullable<T>> for Option<T> {
     fn from(value: NativeNullable<T>) -> Self {
-        println!("{:?}", value);
-        // match value.discriminant {
-        //     0 => None,
-        //     _ => Some(value.value),
-        // }
         match value.discriminant {
             false => None,
             true => Some(value.value),
