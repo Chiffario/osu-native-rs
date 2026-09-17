@@ -327,14 +327,14 @@ mod tests {
             .calculate()?;
         assert!(calc.star_rating > 0.0);
         assert_eq!(calc.max_combo, 719);
-        let calc = CalculatorBuilder::from_path(initialize_path())?
-            .osu()?
-            .mods(vec![])?
-            .performance()?
+        let calc = CalculatorBuilder::from_path(initialize_path())? // CalculatorBuilder<WithPath>
+            .osu()? // CalculatorBuilder<WithRuleset<Osu>>
+            .mods(vec![])? // CalculatorBuilder<WithRuleset<Osu>>
+            .performance()? // PerformanceCalculatorBuilder<Osu>
             .max_combo(250)
             .n100(10)
             .accuracy(0.98)
-            .calculator()?;
+            .calculator()?; // OsuPerformanceAttributes
         assert!(calc.pp > 0.0);
         Ok(())
     }

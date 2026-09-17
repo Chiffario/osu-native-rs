@@ -55,8 +55,9 @@ dependencies = [
 
 [[package]]
 name = "rosu-mods"
-version = "0.3.1"
-source = "git+https://github.com/MaxOhn/rosu-mods?branch=simple-settings#75c8842009964775b943b2ec24d39d7b0f3bca21"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc58d42f8f2308b4b241de147827af84179d0a318de250495c7c5e47cb701cd9"
 dependencies = [
  "serde",
 ]

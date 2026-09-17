@@ -8,7 +8,7 @@ use libosu_native_sys::{
     ErrorCode, Mod_Create, Mod_Destroy, Mod_SetSetting, ModsCollection_Add, ModsCollection_Create,
     ModsCollection_Destroy, NativeModCollectionHandle, NativeModHandle,
 };
-use rosu_mods::simple::SettingSimple;
+use rosu_mods::SettingSimple;
 use thiserror::Error as ThisError;
 
 use crate::{
